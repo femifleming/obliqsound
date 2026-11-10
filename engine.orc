@@ -15,6 +15,10 @@ pgmassign 0, 0
 maxalloc 11, 24
 
 giSine ftgen 0, 0, 8192, 10, 1
+giScL1 ftgen 0, 0, 256, -2, 0     ; scope histories (LFO 1, LFO 2, Lorenz x / y)
+giScL2 ftgen 0, 0, 256, -2, 0
+giScLX ftgen 0, 0, 256, -2, 0
+giScLY ftgen 0, 0, 256, -2, 0
 
 #ifdef SONIC
 ; =====================================================================
@@ -168,6 +172,8 @@ gkPinS[] init 128
 gkPinD[] init 128
 gkPinA[] init 128
 gkPinN init 0
+gkLzX[] init 24
+gkLzY[] init 24
 gkCC[] init 4             ; the four MIDI CC rows of the matrix
 ; swarm modulation (boids + lorenz)
 gkBoidX[] init 8
@@ -1558,6 +1564,7 @@ instr 2
 #end
   endif
 @SPDOTS@
+@LZDOTS@
   kbdt metro 24
   if kcur == 6 then
     cabbageSet kbdt, "bd1", "bounds", 254 + (gkBoidX[0] + 1) * 82, 23 + (gkBoidY[0] + 1) * 67, 8, 8
@@ -1992,14 +1999,29 @@ instr 50
   adispY = adispY * -0.92
   display adispX, 0.04, 1
   display adispY, 0.04, 1
-  alfo1 interp gkL1 * 0.9
-  alfo2 interp gkL2 * 0.9
-  display alfo1, 2, 1
-  display alfo2, 2, 1
-  alorX interp gkLorX * 0.9
-  alorY interp gkLorZ * -0.9
-  display alorX, 1.5, 1
-  display alorY, 1.5, 1
+  ; LFO and Lorenz scopes: Cabbage can't show a 2 s display window, so the last 2 s of each
+  ; signal are kept in a 256-point history and scanned 20 times a second (oldest left, newest right)
+  kscw init 0
+  ksct metro 128
+  if ksct == 1 then
+    tablew gkL1 * 0.9, kscw, giScL1
+    tablew gkL2 * 0.9, kscw, giScL2
+        kscw = (kscw + 1) % 256
+  endif
+  ascp phasor 20
+  ; freeze the history's start at the beginning of each scan, so the trace never tears mid-screen
+  kscp downsamp ascp
+  kscpp init 1
+  kscr init 0
+  if kscp < kscpp then
+    kscr = kscw
+  endif
+  kscpp = kscp
+  ascx = ascp * 256 + kscr
+  alfo1 tablei ascx, giScL1, 0, 0, 1
+  alfo2 tablei ascx, giScL2, 0, 0, 1
+  display alfo1, 0.05, 1
+  display alfo2, 0.05, 1
   gaDispX = 0
   gaDispY = 0
 

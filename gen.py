@@ -455,8 +455,11 @@ c = PW / 2
 screen(c - 200, 10, 180, 150); screen(c + 20, 10, 180, 150)
 for i in range(8):
     image(f'bd{i + 1}', 'boid_dot.png', round(c - 110 + (i - 3.5) * 14), 80, 8, 8, '', mirror=False)
-put(f'signaldisplay bounds({round(c + 24)}, 14, 172, 142), colour(150, 255, 175, 255), backgroundColour(0, 0, 0, 0), '
-    'displayType("lissajous"), signalVariable("alorX", "alorY"), zoom(-1)', 'disp', round(c + 24), 14, 172, 142, False)
+# the attractor as a trail of 24 fading dots (Cabbage's lissajous display can't hold a slow 2 s trail)
+_lz = Image.new('RGBA', (12, 12), (0, 0, 0, 0)); ImageDraw.Draw(_lz).ellipse((1, 1, 10, 10), fill=(150, 255, 175, 255)); _lz.save(ROOT + 'src/lz_dot.png')
+LZ_C = (c + 110, 85)
+for i in range(24):
+    image(f'lz{i}', 'lz_dot.png', round(LZ_C[0] - 3), LZ_C[1] - 3, 6, 6, f', alpha({1 - i / 26:.2f})', mirror=False)
 label('BOIDS  (8 AGENTS)', c - 110, 164, 140, 10); label('LORENZ  ATTRACTOR', c + 110, 164, 140, 10)
 for (a, b), (cx, y) in zip([(('bSpeed', 'SPEED', 0, 1, 0.35), ('lRate', 'RATE', 0, 1, 0.3)),
                             (('bCoh', 'COHESION', 0, 1, 0.5), ('lSigma', 'SIGMA', 2, 20, 10)),
@@ -859,6 +862,13 @@ for ch, (lo, hi, sk, sec) in RANGE.items():
         gm.append(f'  {gk} limit {gk} + {m} * {(hi - lo) * 0.5:.6g}, {lo}, {hi}')
     n += 1
 print('swarm-modulated parameters:', n)
+lzd = ['  ; ---- Lorenz trail on the SWARM page (generated)', '  klzt metro 12', '  if klzt == 1 then',
+       '    klzi = 23', '    while klzi > 0 do', '      gkLzX[klzi] = gkLzX[klzi - 1]', '      gkLzY[klzi] = gkLzY[klzi - 1]', '      klzi -= 1', '    od',
+       '    gkLzX[0] = gkLorX', '    gkLzY[0] = -gkLorZ', '  endif', '  if kcur == 6 && klzt == 1 then']
+for i in range(24):
+    lzd.append(f'    cabbageSet 1, "lz{i}", "bounds", int({LZ_C[0]} - 3 + limit(gkLzX[{i}], -1, 1) * 80), int({LZ_C[1]} - 3 + limit(gkLzY[{i}], -1, 1) * 64), 6, 6')
+lzd.append('  endif')
+lzdots = '\n'.join(lzd)
 # MIDI CC rows: any channel, the most recently moved one wins; the CC number is chosen in the matrix spine
 ccr = ['  ; ---- the four MIDI CC rows of the matrix (generated)']
 for k_ in range(1, 5):
@@ -891,7 +901,7 @@ if SONIC:
              ('spFSplay', 0.2, 1), ('spHeight', 0.2, 1), ('spRot', -0.4, 0.4))]
 orc = (orc.replace('@NSRC@', str(len(SRC))).replace('@NDST@', str(len(DST)))
           .replace('@FILES@', ', '.join(f'"{f}"' for f in FILES))
-          .replace('@NCHNLS@', '16' if SONIC else '2').replace('@CCREAD@', ccread).replace('@SPDOTS@', spdots)
+          .replace('@NCHNLS@', '16' if SONIC else '2').replace('@CCREAD@', ccread).replace('@SPDOTS@', spdots).replace('@LZDOTS@', lzdots)
           .replace('@SREAD@', '\n'.join(sread)).replace('@SLAB@', '\n'.join(slab)).replace('@GMOD@', '\n'.join(gm)).replace('@RND@', '\n'.join(rnd)).replace('@SNAMES@', snames).replace('@VU@', vu).replace('@NFR@', str(NFR)).replace('@NIDLE@', str(NIDLE)).replace('@IDLEFPS@', str(IDLE_FPS)).replace('@PINREAD@', pinread))
 
 csd = f'''<Cabbage>{cab}</Cabbage>
@@ -918,6 +928,7 @@ wv_saw.png
 wv_tri.png
 wv_square.png
 boid_dot.png
+lz_dot.png
 </CabbageIncludes>
 
 <CsoundSynthesizer>
