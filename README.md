@@ -52,7 +52,7 @@ Download the zips from the [Releases page](../../releases/latest):
    ```sh
    xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Obliq*.vst3 ~/Library/Audio/Plug-Ins/VST/Obliq*.vst /Applications/Obliq*.app
    ```
-3. Rescan plug-ins in your DAW.
+3. Rescan plug-ins in your DAW. Both plug-ins are listed under the manufacturer **Obliq**.
 
 The plug-ins run on Apple silicon and Intel (macOS 11 or later). Each one is about 130 MB, mostly the rendered landscape frames and the recordings.
 
