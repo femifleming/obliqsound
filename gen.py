@@ -532,7 +532,7 @@ GREEN = np.array([115, 174, 138], float)
 rng_ = np.random.default_rng(11)
 NFR = 6                                                   # morph frames each way
 NIDLE = int(os.environ.get('NIDLE', 120))                                               # idle-drift loop frames per page (24 fps -> a 5 s loop)
-IDLE_FPS = 24
+IDLE_FPS = 12
 RINGS = [(0, 1.00), (7, 0.80), (15, 0.66), (24, 0.55), (34, 0.46), (45, 0.38), (57, 0.31), (70, 0.25), (84, 0.20)]
 
 def brushed(h, w, amt, seed=0):
@@ -836,7 +836,7 @@ rnd.append(f'    cabbageSetValue "waveform", int(random:k(1, 4.99)), krnt')
 rnd.append(f'    krsel = int(random:k(1, {NS} + 0.999))')
 rnd += [f'    cabbageSetValue "S{i}", (krsel == {i} ? 1 : 0), krnt' for i in range(1, NS + 1)]
 rnd.append('    cabbageSetValue "AmpSamp", random:k(0.03, 0.12), krnt')
-pinread_l = ['  kpcnt init 0', '  kpcnt += 1', '  if kpcnt % 4 == 1 then', '    kpn = 0']
+pinread_l = ['  kpcnt init 0', '  kpcnt += 1', '  if kpcnt % 12 == 1 then', '    kpn = 0']
 for ch, si, di in PINS:
     pinread_l += [f'    kpv chnget "{ch}"', '    if abs(kpv) > 0.0005 && kpn < 128 then',
                   f'      gkPinS[kpn] = {si}', f'      gkPinD[kpn] = {di}', '      gkPinA[kpn] = kpv', '      kpn += 1', '    endif']
@@ -849,9 +849,12 @@ gkmap = dict((ch, gk) for gk, ch in re.findall(r'^\s*(gk\w+) chnget "(\w+)"', or
 SECIDX = {'source': 0, 'poly': 1, 'ode': 2, 'filter': 3, 'fx': 4, 'motion': 5}
 gm = ['  ; ---- swarm modulation (generated): boids + lorenz on every continuous parameter']
 n = 0
+# the swarm moves timbre. Pitch, tuning, playback speed, levels and the drone switch stay where you put them
+NO_SWARM = {'VCAinit', 'AmpSamp', 'fVoice', 'drive', 'volume', 'ampVCO', 'noise', 'pLevel', 'oLevel', 'sub', 'dlyMix', 'reverb',
+            'velAmt', 'fGain', 'VCO', 'Tune1', 'fPitch', 'fSpeed', 'pTune', 'oTune', 'oFine', 'pRatio', 'pEnv', 'glide', 'vib'}
 for ch, (lo, hi, sk, sec) in RANGE.items():
     gk = gkmap.get(ch)
-    if not gk: continue
+    if not gk or ch in NO_SWARM: continue
     b, ax, la = n % 8, 'X' if (n // 8) % 2 == 0 else 'Y', 'XYZ'[n % 3]
     sgn = '-' if n % 2 else ''
     m = f'(gkSwB[{SECIDX[sec]}] * gkBoid{ax}[{b}] + gkSwL[{SECIDX[sec]}] * {sgn}gkLor{la})'
@@ -898,6 +901,13 @@ if SONIC:
     rnd += [f'    cabbageSetValue "{c_}", random:k({lo_}, {hi_}), krnt' for c_, lo_, hi_ in
             (('spMode', 0, 2), ('spSpeed', 0.05, 0.7), ('spDev', 0, 0.8), ('spGrav', 0.1, 0.9), ('spCoh', 0, 1),
              ('spFSplay', 0.2, 1), ('spHeight', 0.2, 1), ('spRot', -0.4, 0.4))]
+# level-match the recordings: one gain per file so they all sit near the same loudness
+import wave as _wave
+def _rms(fn):
+    w_ = _wave.open(fn); a_ = np.frombuffer(w_.readframes(w_.getnframes()), '<i2').astype(float) / 32768
+    return float(np.sqrt((a_ ** 2).mean()))
+fnorm = ', '.join(f'{min(3.0, max(0.5, 0.09 / max(_rms(ROOT + "samples/" + f + ".wav"), 1e-4))):.3f}' for f in FILES)
+orc = orc.replace('@FNORM@', fnorm)
 orc = (orc.replace('@NSRC@', str(len(SRC))).replace('@NDST@', str(len(DST)))
           .replace('@FILES@', ', '.join(f'"{f}"' for f in FILES))
           .replace('@NCHNLS@', '16' if SONIC else '2').replace('@CCREAD@', ccread).replace('@SPDOTS@', spdots).replace('@LZDOTS@', lzdots)

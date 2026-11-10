@@ -5,14 +5,15 @@
 ;  sub, FM, wavefolder, nature resonator, glide, chorus, drive,
 ;  ping-pong delay and a sized reverb.
 ; =====================================================================
-ksmps  = 32
+ksmps  = 64
 nchnls = @NCHNLS@
 0dbfs  = 1
 seed 0
 
 massign 0, 1
 pgmassign 0, 0
-maxalloc 11, 24
+maxalloc 11, 40
+gkNoteN init 0            ; running count of notes started (for voice stealing)
 
 giSine ftgen 0, 0, 8192, 10, 1
 giScL1 ftgen 0, 0, 256, -2, 0     ; scope histories (LFO 1, LFO 2, Lorenz x / y)
@@ -264,6 +265,7 @@ gkFTabL init 0
 gkFTabR init 0
 gkFLen init 8
 gkFSrFix init 1
+gkFNorm init 1
 gkFAtt init 0.01
 gkFRel init 0.25
 gkFGain init 1
@@ -513,14 +515,20 @@ instr 1
   gkHeld init i(gkHeld) + 1
   idrone = (i(gkInit) > 0.001 ? 1 : 0)
   ifrac = 11 + (islot + 1) / 1000
-  event_i "i", ifrac, 0, -1, inote, ivel, islot, i(gkGen), idrone
+  gkNoteN init i(gkNoteN) + 1
+  event_i "i", ifrac, 0, -1, inote, ivel, islot, i(gkGen), idrone, i(gkNoteN)
   xtratim 0.05
   gkBend pchbend 0, 2
   gkMWheel midictrl 1, 0, 1
   gkATouch aftouch 0, 1
   krel release
   gkKeyUp[islot] = krel
-  koff trigger krel, 0.5, 0
+  kprel init 0                       ; explicit state: 'trigger' keeps its memory when an instance is reused
+  koff = 0
+  if krel > 0.5 && kprel < 0.5 then
+    koff = 1
+  endif
+  kprel = krel
   if koff == 1 then
     gkHeld = max(gkHeld - 1, 0)
     if idrone == 0 then
@@ -539,6 +547,7 @@ instr 11
   islot = p6
   igen = p7
   idrone = p8
+  iord = p9
   irand random -1, 1
   istart = i(gkLastPitch)
   gkLastPitch init inote
@@ -579,7 +588,10 @@ instr 11
       kfenv = kflast
     endif
     aenvm interp kaenv
-    kalive = (gkGen == igen ? 1 : 0)
+    kalive = 0
+    if gkGen == igen && gkNoteN - iord < 8 then        ; the last chord drones, at most 8 notes of it
+      kalive = 1
+    endif
     kalive portk kalive, 0.08
     aflo interp gkInit * kalive
     aenv max aenvm, aflo
@@ -593,6 +605,19 @@ instr 11
   endif
   kmenv linseg 0, i(gkMeA), 1, i(gkMeD), 0
 
+  ; ---- voice management: at most 16 voices sound. The oldest is stolen with a 15 ms fade,
+  ;      then it idles (no DSP) until Csound lets it go.
+  kstolen init 0
+  kstf init 1
+  if gkNoteN - iord >= 16 && kstolen == 0 then
+    kstolen = 1
+    turnoff
+  endif
+  if kstolen == 1 then
+    kstf = max(kstf - ksmps / (sr * 0.015), 0)
+    if kstf <= 0 kgoto VOICE_END
+  endif
+
   ; ---- MIDI controllers
   kbend = gkBend * gkBendR * 0.5
   kwheel = gkMWheel
@@ -601,44 +626,48 @@ instr 11
   ; ---- modulation matrix
   kS[] init @NSRC@
   kD[] init @NDST@
-  kS[0] = 0
-  kS[1] = gkL1
-  kS[2] = gkL2
-  kS[3] = kmenv
-  kS[4] = kaenv
-  kS[5] = ivel
-  kS[6] = (inote - 60) / 24
-  kS[7] = kwheel
-  kS[8] = kat
-  kS[9] = irand
-  kS[10] = gkChaos
-  kS[11] = gkNatEnv
-  kS[12] = gkFollow
-  kS[13] = gkOutEnv
-  ibd = islot % 8
-  kS[14] = gkBoidX[ibd] * gkScBV
-  kS[15] = gkBoidY[ibd] * gkScBV
-  kS[16] = gkLorX
-  kS[17] = gkLorY
-  kS[18] = gkLorZ
-  kS[19] = gkCC[0]
-  kS[20] = gkCC[1]
-  kS[21] = gkCC[2]
-  kS[22] = gkCC[3]
-  ki = 0
-  while ki < @NDST@ do
-    kD[ki] = 0
-    ki += 1
-  od
-  ki = 0
-  while ki < gkPinN do
-    ksrc = int(gkPinS[ki]) - 1
-    kdst = int(gkPinD[ki]) - 1
-    if ksrc > 0 && kdst > 0 && ksrc < @NSRC@ && kdst < @NDST@ then
-      kD[kdst] = kD[kdst] + gkPinA[ki] * kS[ksrc]
-    endif
-    ki += 1
-  od
+  kmdc init 0
+  if kmdc == 0 then
+    kS[0] = 0
+    kS[1] = gkL1
+    kS[2] = gkL2
+    kS[3] = kmenv
+    kS[4] = kaenv
+    kS[5] = ivel
+    kS[6] = (inote - 60) / 24
+    kS[7] = kwheel
+    kS[8] = kat
+    kS[9] = irand
+    kS[10] = gkChaos
+    kS[11] = gkNatEnv
+    kS[12] = gkFollow
+    kS[13] = gkOutEnv
+    ibd = islot % 8
+    kS[14] = gkBoidX[ibd] * gkScBV
+    kS[15] = gkBoidY[ibd] * gkScBV
+    kS[16] = gkLorX
+    kS[17] = gkLorY
+    kS[18] = gkLorZ
+    kS[19] = gkCC[0]
+    kS[20] = gkCC[1]
+    kS[21] = gkCC[2]
+    kS[22] = gkCC[3]
+    ki = 0
+    while ki < @NDST@ do
+      kD[ki] = 0
+      ki += 1
+    od
+    ki = 0
+    while ki < gkPinN do
+      ksrc = int(gkPinS[ki]) - 1
+      kdst = int(gkPinD[ki]) - 1
+      if ksrc > 0 && kdst > 0 && ksrc < @NSRC@ && kdst < @NDST@ then
+        kD[kdst] = kD[kdst] + gkPinA[ki] * kS[ksrc]
+      endif
+      ki += 1
+    od
+  endif
+  kmdc = (kmdc + 1) % 4
   ; kD index: 1 pitch 2 cutoff 3 res 4 pw 5 fold 6 fm 7 sub 8 noise 9 resonate
   ;           10 detune 11 amp 12 pan 13/14 lfo rates (global) 15 delay 16 reverb
   ;           17 order 18 teeth 19 roll 20 OP amt 21 poly level 22 poly fold
@@ -869,7 +898,7 @@ instr 11
     afr flooper2 1, kfp, kfst, kfen, kfxf, iftr, ifst
     gaFieldRaw += (afl + afr) * 0.5
     kflv limit gkFVoice + kD[32], 0, 1
-    kflv = kflv * kflv * 1.1
+    kflv = kflv * kflv * 1.1 * gkFNorm
     aL += afl * kflv
     aR += afr * kflv
   endif
@@ -990,8 +1019,13 @@ instr 11
   kvel = 1 - gkVelAmt + gkVelAmt * ivel
   kamp limit (1 + kD[11]) * kvel, 0, 2
   kamp portk kamp, 0.004
-  aL *= aenv * kamp * 0.32
-  aR *= aenv * kamp * 0.32
+  aL *= aenv * kamp * 0.26 * kstf
+  aR *= aenv * kamp * 0.26 * kstf
+  ; DRIVE saturates each voice on its own, so chords stay clean (no intermodulation of the whole mix)
+  kvdg = 1 + gkDrive * 7
+  kvdc = 1 / (1 + gkDrive * 2.5)
+  aL = tanh(aL * kvdg) * kvdc
+  aR = tanh(aR * kvdg) * kvdc
 
   ipanr random -1, 1
 #ifdef SONIC
@@ -1013,9 +1047,7 @@ instr 11
   kxr = kxr + isx * kdv
   kyr = kyr + isy * kdv
   kzr = kzr + isz * kdv * 0.6
-  kvdg = 1 + gkDrive * 7
-  kvdc = 1 / (1 + gkDrive * 2.5)
-  amono = tanh((aL + aR) * 0.7071 * kvdg) * kvdc
+  amono = (aL + aR) * 0.7071
   SpPoint amono, kxr, kyr, kzr, gkSpSpread + kD[40], gkSpAir + kD[42]
 #else
   kpan limit 0.5 + kD[12] * 0.5 + ipanr * gkVStereo * 0.5, 0, 1
@@ -1032,6 +1064,7 @@ instr 11
   gaDlyR += aR * kds
   gaRevL += aL * krs
   gaRevR += aR * krs
+VOICE_END:
 endin
 
 ; ---------------------------------------------------------------------
@@ -1528,8 +1561,8 @@ instr 2
   kidt metro @IDLEFPS@
   if kanim > 0 then
     kidl = 0
-  elseif kidt == 1 then
-    if ktab != kcur then
+  elseif kidt == 1 && (kcur != 5 || ktab != kcur || kidl != 0) then      ; the matrix board hides the land: no redraws there
+    if ktab != kcur || kcur == 5 then
       ; a page change is waiting: run the land quickly back to its resting shape, then morph
       if kidl < @NIDLE@ / 2 then
         kidl = max(kidl - 6, 0)
@@ -1828,15 +1861,13 @@ instr 50
   aNR *= kns
 
   ; drive
-  kdrv portk gkDrive, 0.02
-  kdg = 1 + kdrv * 7
-  kdc = 1 / (1 + kdrv * 2.5)
-  aL = tanh(gaVL * kdg) * kdc
-  aR = tanh(gaVR * kdg) * kdc
-  aDL = tanh(gaDlyL * kdg) * kdc
-  aDR = tanh(gaDlyR * kdg) * kdc
-  aRL = tanh(gaRevL * kdg) * kdc
-  aRR = tanh(gaRevR * kdg) * kdc
+  ; (drive is applied per voice now; the buses pass through clean)
+  aL = gaVL
+  aR = gaVR
+  aDL = gaDlyL
+  aDR = gaDlyR
+  aRL = gaRevL
+  aRR = gaRevR
 
   ; chorus / ensemble
   kch portk gkChorus, 0.02
@@ -1930,12 +1961,21 @@ instr 50
   kvol portk gkVol / 3, 0.02
   aL = aL * kvol
   aR = aR * kvol
-  aL = aL / (1 + abs(aL) * 0.15)
-  aR = aR / (1 + abs(aR) * 0.15)
   aL dcblock2 aL
   aR dcblock2 aR
-  aL limit aL, -0.98, 0.98
-  aR limit aR, -0.98, 0.98
+  ; transparent linked peak limiter (fast attack, 150 ms release) instead of a waveshaper + hard clip
+  kpkl max_k aL, 1, 1
+  kpkr max_k aR, 1, 1
+  kpk = max(kpkl, kpkr)
+  klim init 0
+  klim = (kpk > klim ? kpk : klim * 0.992)
+  kgl = (klim > 0.89 ? 0.89 / klim : 1)
+  agl interp kgl
+  agl tone agl, 400
+  aL = aL * agl
+  aR = aR * agl
+  aL clip aL, 0, 0.99
+  aR clip aR, 0, 0.99
   outs aL, aR
   gaOutPrev = (aL + aR) * 0.5
   gkVuL rms aL, 12
@@ -2443,13 +2483,14 @@ FSKIP:
   rireturn
   kon = (gkNatSel > 8 ? 1 : 0)
   kbl portk kon * 0.6 * (1 - exp(-gkSamp * 25 / 0.6)), 0.02
-  a1 = a1 * kbl * 0.62
+  a1 = a1 * kbl * 0.62 * gkFNorm
   ip = 12 + icp
   SpPoint a1, gkPX[ip], gkPY[ip], gkPZ[ip], gkSpSpread, gkSpAir
 endin
 #end
 
 gSFiles[] fillarray @FILES@
+giFNorm[] fillarray @FNORM@          ; loudness-matching gain of each recording
 giNFiles = lenarray(gSFiles)
 
 instr 6
@@ -2480,6 +2521,7 @@ LOAD:
   gkFTabL init itl
   gkFTabR init itr
   gkFLen init giFLen[isel]
+  gkFNorm init giFNorm[isel - 1]
   gkFSrFix init ftsr(itl) / sr
   imode = (i(gkFRev) > 0.5 ? 1 : 0)
   ilen = giFLen[isel]
@@ -2508,7 +2550,7 @@ LOAD:
   koe = koe + (kot - koe) * (kot > koe ? kca : kcr)
   gkOutEnv = koe
 
-  kbl portk kon * 0.6 * (1 - exp(-gkSamp * 25 / 0.6)), 0.02
+  kbl portk kon * 0.6 * (1 - exp(-gkSamp * 25 / 0.6)) * gkFNorm, 0.02
   gaFieldL += aBL * kbl
   gaFieldR += aBR * kbl
   gaFieldRaw = 0
