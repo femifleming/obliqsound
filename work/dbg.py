@@ -1,7 +1,7 @@
 # Render the engine with the csound CLI: widget defaults + overrides, MIDI-like notes via score.
 # usage: dbg.py out.wav "chan=val,..." "note:start:dur,..." secs [extra orc code]
 import sys, re, os, subprocess
-csd = open(os.path.expanduser(os.environ.get('CSD', '~/kia-xl/src/ObliqSound.csd')), encoding='latin-1').read()
+csd = open(os.path.expanduser(os.environ.get('CSD', os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src', 'ObliqSound.csd'))), encoding='latin-1').read()
 cab = csd[csd.index('<Cabbage>'):csd.index('</Cabbage>')]
 defs = {}
 for line in cab.split('\n'):
@@ -37,7 +37,7 @@ opcode cabbageSetValue, 0, Skk
  S1,k1,k2 xin
 endop
 '''
-init = '\n'.join(f'chnset {v}, "{k}"' for k, v in defs.items()) + '\nchnset 120, "HOST_BPM"\nchnset "/Users/femishonugafleming/kia-xl", "CSD_PATH"\n'
+init = '\n'.join(f'chnset {v}, "{k}"' for k, v in defs.items()) + '\nchnset 120, "HOST_BPM"\nchnset "' + os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')) + '", "CSD_PATH"\n'
 orc = orc.replace('giSine ftgen', stub + init + 'giSine ftgen', 1)
 orc = orc.replace('massign 0, 1\n', '')
 # score-driven voice: emulate MIDI note via p4/p5

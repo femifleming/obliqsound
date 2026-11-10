@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Kia instrument XL - compact eurorack-style panel.
+"""ObliqSound / ObliqSonic - panel, engine and preset generator.
 Every element is placed either ON the centre line or as an exact MIRROR PAIR,
 the brushed-aluminium panel (with tick scales under every knob) is rendered to
 match, a symmetry check runs before writing, and the engine orc is completed."""
@@ -8,9 +8,8 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 HOME = os.path.expanduser('~')
-ROOT = HOME + '/kia-xl/'
-RES = '/Users/Shared/KIA/Resources/'
-SNAPS_ORIG = RES + 'Kia presets.snaps' if os.path.exists(RES + 'Kia presets.snaps') else ROOT + 'presets/kia-original.snaps'
+ROOT = os.path.dirname(os.path.abspath(__file__)) + '/'
+SNAPS_ORIG = ROOT + 'presets/base.snaps'
 OUT = sys.argv[1] if len(sys.argv) > 1 else ROOT + 'src/ObliqSound.csd'
 SONIC = 'sonic' in os.path.basename(OUT).lower()          # ObliqSonic: the 16-channel ambisonic encoder version
 NAME = 'ObliqSonic' if SONIC else 'ObliqSound'

@@ -1,5 +1,5 @@
-// Headless VST3 host for testing Kia_instrument variants.
-// usage: KiaHost <plugin.vst3> [--list] [--snap out.png] [--wav out.wav] [--secs N]
+// Headless VST3 host for testing ObliqSound / ObliqSonic.
+// usage: ObliqHost <plugin.vst3> [--list] [--snap out.png] [--wav out.wav] [--secs N]
 //                [--set name=norm ...] [--settext name=text ...]
 //                [--notes "note:start:dur:vel,..."] [--wait ms]
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -19,7 +19,7 @@ static AudioProcessorParameter* findParam (AudioPluginInstance& p, const String&
 class App : public JUCEApplication
 {
 public:
-    const String getApplicationName() override { return "KiaHost"; }
+    const String getApplicationName() override { return "ObliqHost"; }
     const String getApplicationVersion() override { return "1"; }
 
     void initialise (const String&) override

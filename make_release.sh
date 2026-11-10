@@ -2,7 +2,7 @@
 # Builds every deliverable and zips them into dist/ for a GitHub release.
 set -e
 cd "$(dirname "$0")"
-rm -rf dist; mkdir -p dist
+rm -rf dist build/apps; mkdir -p dist build/apps
 rm -rf app/build
 for N in ObliqSound ObliqSonic; do
   I=$([ $N = ObliqSound ] && echo Oblq || echo Oblc)

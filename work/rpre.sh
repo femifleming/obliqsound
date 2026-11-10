@@ -1,6 +1,6 @@
 #!/bin/bash
 # render presets (full values) via CLI harness: rpre.sh "name" ...
-cd ~/kia-xl
+cd "$(dirname "$0")/.."
 for n in "$@"; do
   args=$(python3 -c "
 import json,sys; d=json.load(open('/Users/Shared/ObliqSound/ObliqSound presets.snaps'))[sys.argv[1]]

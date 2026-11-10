@@ -1,6 +1,6 @@
 ; =====================================================================
-;  Kia instrument XL  -  open polyphonic engine
-;  Follows every control of the original Kia instrument (same channels),
+;  ObliqSound / ObliqSonic  -  open polyphonic engine
+;  Follows every control of the instrument it grew from (same channels),
 ;  plus: 2 LFOs, mod envelope, 8-slot mod matrix, unison/detune/drift,
 ;  sub, FM, wavefolder, nature resonator, glide, chorus, drive,
 ;  ping-pong delay and a sized reverb.

@@ -84,7 +84,7 @@ NAME=ObliqSonic ./build_app.sh build/apps       # a desktop app
 
 - `engine.orc` is the whole Csound engine. ObliqSonic's spatial side is in its `#ifdef SONIC` blocks.
 - `gen.py` writes the Cabbage panel and checks its symmetry. It also renders the topographic frames (cached in `src/.bgcache.json`; the first run takes several minutes) and writes the presets.
-- `build.sh` wraps the result in the Cabbage 2.8 plug-in shell from `original-backup/` and gives it its own plug-in IDs.
+- `build.sh` wraps the result in the Cabbage 2.8 plug-in shell in `shell/` and gives it its own plug-in IDs and manufacturer name (`shell/patch_vendor.py`).
 - `app/` is the JUCE desktop host, `host/` a headless test host, and `work/dbg.py` renders the engine with the Csound command line.
 - `manual/mkmanual.py` builds the PDF.
 

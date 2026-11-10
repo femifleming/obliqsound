@@ -1,7 +1,7 @@
 # 8 s seamless stereo loops (16-bit, 44.1k) cut from the middle of each recording
 import sys, os, subprocess, numpy as np, re
 SRC = os.path.expanduser('~/Desktop/Folders/Realmorereal/Campbinet_NewSamples')
-OUT = os.path.expanduser('~/kia-xl/samples')
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'samples')
 SR, LEN, XF = 44100, 8.0, 0.5
 RENAME = {'202610251258Recordingw':'recording_oct25','embodieslisteningexper':'embodied_listening','somethingtosampleyeste':'show_sample',
           'oneofthebitchesjun10':'oneofthebitches','Tent_Talk22':'Tent_Talk3','hydrophone22':'hydrophone3','wingieintoNorns_drone':'wingie_into_norns'}

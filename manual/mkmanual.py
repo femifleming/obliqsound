@@ -12,7 +12,7 @@ from reportlab.platypus import (BaseDocTemplate, PageTemplate, Frame, Paragraph,
                                 PageBreak, KeepTogether, NextPageTemplate, CondPageBreak)
 from reportlab.platypus.tableofcontents import TableOfContents
 
-ROOT = os.path.expanduser('~/kia-xl/')
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/'
 IMG = ROOT + 'manual/img/'
 OUT = ROOT + 'manual/ObliqSound_ObliqSonic_Manual.pdf'
 

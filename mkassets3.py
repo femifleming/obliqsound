@@ -107,7 +107,7 @@ dot.filter(ImageFilter.GaussianBlur(0.6)).save(OUT + 'boid_dot.png')
 
 # ---------------- ObliqSound logo (recreated; replaced by brand/obliqsound_logo.png if present)
 import os
-src = os.path.expanduser('~/kia-xl/brand/obliqsound_logo.png')
+src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'brand/obliqsound_logo.png')
 if os.path.exists(src):
     im = Image.open(src).convert('RGB'); a = np.asarray(im).astype(float)
     bright = a.min(-1)                                # white letters on green -> alpha from brightness

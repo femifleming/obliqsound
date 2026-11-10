@@ -247,7 +247,25 @@ public:
 
         // devices
         auto devXml = parseXML (supportDir().getChildFile ("devices.xml"));
+        // a device that hung us last time (the marker survived) is skipped: start on the default output
+        auto marker = supportDir().getChildFile ("opening-audio-device");
+        String skipped;
+        if (marker.existsAsFile() && devXml != nullptr)
+        {
+            skipped = devXml->getStringAttribute ("audioOutputDeviceName");
+            devXml = nullptr;
+        }
+        if (devXml != nullptr && devXml->getIntAttribute ("audioDeviceBufferSize") <= 0)
+            devXml->setAttribute ("audioDeviceBufferSize", 256);
+        marker.replaceWithText ("1");
         deviceManager.initialise (0, OBLIQ_SONIC ? 16 : 2, devXml.get(), true);
+        marker.deleteFile();
+        if (skipped.isNotEmpty())
+            MessageManager::callAsync ([skipped] {
+                AlertWindow::showMessageBoxAsync (MessageBoxIconType::WarningIcon, OBLIQ_NAME,
+                    "The audio device \"" + skipped + "\" didn't open last time, so " OBLIQ_NAME " started on the default output.\n"
+                    "Choose a device again in Options > Audio / MIDI Settings.");
+            });
         if (! devXml)
         {   // first launch: prefer the system default output at 48k / 256
             auto setup = deviceManager.getAudioDeviceSetup();
