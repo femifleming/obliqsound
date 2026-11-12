@@ -65,3 +65,9 @@ plugin/build/
 plugin/*.log
 sc/build/
 work/tmp/
+
+# CI scratch
+ci/tmp/
+ci/mac/
+pv/
+pv.zip

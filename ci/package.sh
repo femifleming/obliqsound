@@ -1,0 +1,30 @@
+#!/bin/bash
+# Windows / Linux: fills the built VST3 bundles and desktop apps with the resources and zips them into dist/.
+# The platform-independent resources (art, layout, presets, SynthDefs, recordings, manual) are taken from the
+# macOS VST3 zips of a release, which gen.py and sclang produced on the Mac.
+# usage: ci/package.sh <Windows|Linux> <folder holding ObliqSound-VST3-macOS.zip and ObliqSonic-VST3-macOS.zip> [build dir]
+set -e
+OS=$1; MAC=$2; B=${3:-plugin/build}
+cd "$(dirname "$0")/.."
+SCP=third_party/sc-build/server/plugins
+EXT=$([ "$OS" = Linux ] && echo so || echo scx)
+rm -rf dist ci/tmp && mkdir -p dist ci/tmp
+for N in ObliqSound ObliqSonic; do
+  unzip -q -o "$MAC/$N-VST3-macOS.zip" "$N.vst3/Contents/Resources/*" -d ci/tmp
+  SRC=ci/tmp/$N.vst3/Contents/Resources
+  rm -rf "$SRC/plugins" && mkdir -p "$SRC/plugins"
+  for p in BinaryOpUGens UnaryOpUGens MulAddUGens IOUGens OscUGens LFUGens NoiseUGens DynNoiseUGens FilterUGens DelayUGens PanUGens TriggerUGens ReverbUGens GrainUGens ChaosUGens DemandUGens PhysicalModelingUGens; do
+    cp "$(find $SCP -name "$p.$EXT" | head -1)" "$SRC/plugins/"
+  done
+  cp "$(find $B -maxdepth 2 -name "OblqUGens.$EXT" | head -1)" "$SRC/plugins/"
+  # VST3
+  V=$(find $B/${N}_artefacts -type d -name "$N.vst3" | head -1)
+  mkdir -p "$V/Contents/Resources" && cp -R "$SRC"/. "$V/Contents/Resources/"
+  (cd "$(dirname "$V")" && zip -q -r "$OLDPWD/dist/$N-VST3-$OS.zip" "$N.vst3")
+  # desktop app: the program with its Resources folder beside it
+  A=ci/tmp/app/$N; mkdir -p "$A"
+  cp "$(find $B/${N}_artefacts -path "*Standalone*" -type f \( -name "$N" -o -name "$N.exe" \) | head -1)" "$A/"
+  cp -R "$SRC" "$A/Resources"
+  (cd ci/tmp/app && zip -q -r "$OLDPWD/dist/$N-App-$OS.zip" "$N")
+done
+ls -la dist

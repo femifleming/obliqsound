@@ -21,8 +21,12 @@ namespace
 
 juce::File ObliqProcessor::resourceDir()
 {
-    auto exe = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
-    return exe.getParentDirectory().getParentDirectory().getChildFile ("Resources");
+    // macOS bundles and every VST3: <bundle>/Contents/<binary folder>/<binary>, resources in Contents/Resources.
+    // The Windows and Linux desktop apps: a Resources folder beside the program.
+    const auto exe = juce::File::getSpecialLocation (juce::File::currentExecutableFile);
+    const auto inBundle = exe.getParentDirectory().getParentDirectory().getChildFile ("Resources");
+    const auto beside = exe.getParentDirectory().getChildFile ("Resources");
+    return (! inBundle.getChildFile ("layout.json").existsAsFile() && beside.getChildFile ("layout.json").existsAsFile()) ? beside : inBundle;
 }
 
 ObliqProcessor::ObliqProcessor()
@@ -125,7 +129,11 @@ void ObliqProcessor::setStateInformation (const void* data, int size)
 
 juce::File ObliqProcessor::userPresetFile() const
 {
-    auto d = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory).getChildFile ("Application Support").getChildFile (JucePlugin_Name);
+    auto d = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+               #if JUCE_MAC
+                .getChildFile ("Application Support")
+               #endif
+                .getChildFile (JucePlugin_Name);
     d.createDirectory();
     return d.getChildFile ("presets.json");
 }

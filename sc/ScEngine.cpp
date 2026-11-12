@@ -5,15 +5,59 @@
 #include "SC_World.h"
 #include "SC_WorldOptions.h"
 #include "SC_ReplyImpl.hpp"
+#include "SC_Prototypes.h"
 
+#include <algorithm>
 #include <chrono>
+#include <cmath>
+#include <cstring>
 #include <thread>
 
-// The server's audio driver with no device behind it: the host calls Run() one 64-frame block at a time.
-class ScEmbeddedDriver : public SC_CoreAudioDriver {
+// The server's audio driver with no device behind it: the host calls render() one 64-frame block at a time.
+// It derives from the server's generic driver class, so it is the same on macOS, Windows and Linux.
+class ScEmbeddedDriver : public SC_AudioDriver {
 public:
-    ScEmbeddedDriver (World* w, double sr): SC_CoreAudioDriver (w), rate (sr) {}
-    void render (AudioBufferList* out, int64 oscTime) { Run<false> (nullptr, out, oscTime); }
+    ScEmbeddedDriver (World* w, double sr): SC_AudioDriver (w), rate (sr) {}
+    // outs: one buffer of world->mBufLength frames per output bus, already cleared
+    void render (float* const* outs, int numOuts, int64 oscTime)
+    {
+        const auto t0 = std::chrono::steady_clock::now();
+        World* world = mWorld;
+        try
+        {
+            mOSCbuftime = oscTime;
+            mFromEngine.Free();
+            mToEngine.Perform();
+            mOscPacketsToEngine.Perform();
+            const int bufFrames = world->mBufLength;
+            const int32 bufCounter = world->mBufCounter;
+            const int64 nextTime = oscTime + mOSCincrement;
+            int64 schedTime;
+            while ((schedTime = mScheduler.NextTime()) <= nextTime)
+            {
+                const float diffTime = (float) (schedTime - oscTime) * (float) mOSCtoSamples + 0.5f;
+                const float diffFloor = std::floor (diffTime);
+                world->mSampleOffset = std::min (std::max ((int) diffFloor, 0), bufFrames - 1);
+                world->mSubsampleOffset = diffTime - diffFloor;
+                SC_ScheduledEvent event = mScheduler.Remove();
+                event.Perform();
+            }
+            world->mSampleOffset = 0;
+            world->mSubsampleOffset = 0.0f;
+            World_Run (world);
+            const int n = std::min (numOuts, (int) world->mNumOutputs);
+            for (int c = 0; c < n; ++c)
+                if (world->mAudioBusTouched[c] == bufCounter)
+                    std::memcpy (outs[c], world->mAudioBus + c * bufFrames, sizeof (float) * (size_t) bufFrames);
+            mOSCbuftime = nextTime;
+            world->mBufCounter++;
+        }
+        catch (...) {}
+        mAudioSync.Signal();                  // wake the helper thread for whatever the block handed over
+        const double secs = std::chrono::duration<double> (std::chrono::steady_clock::now() - t0).count();
+        cpu += 0.1 * (secs * rate / 64.0 * 100.0 - cpu);
+    }
+    double cpu = 0.0;
 protected:
     bool DriverSetup (int* outNumSamples, double* outSampleRate) override { *outNumSamples = 64; *outSampleRate = rate; return true; }
     bool DriverStart() override { return true; }
@@ -21,6 +65,18 @@ protected:
 private:
     double rate;
 };
+
+#if ! defined (__APPLE__)
+// On Windows and Linux the server's own device back end (PortAudio / JACK) is left out of the link;
+// these are the few functions it would have provided.
+#include "SC_Time.hpp"
+extern "C" {
+int32 server_timeseed() { return timeSeed(); }
+int64 oscTimeNow() { return OSCTime (getTime()); }
+}
+void initializeScheduler() {}
+SC_AudioDriver* SC_NewAudioDriver (struct World*) { return nullptr; }
+#endif
 
 ScEngine::ScEngine() {}
 ScEngine::~ScEngine() { stop(); }
@@ -87,16 +143,10 @@ void ScEngine::send (const OscMsg& m)
 
 void ScEngine::runBlock()
 {
-    AudioBufferList* abl = (AudioBufferList*) alloca (sizeof (AudioBufferList) + sizeof (AudioBuffer) * (size_t) nOut);
-    abl->mNumberBuffers = (UInt32) nOut;
-    for (int c = 0; c < nOut; ++c)
-    {
-        std::fill (block[(size_t) c].begin(), block[(size_t) c].end(), 0.0f);
-        abl->mBuffers[c].mNumberChannels = 1;
-        abl->mBuffers[c].mDataByteSize = 64 * sizeof (float);
-        abl->mBuffers[c].mData = block[(size_t) c].data();
-    }
-    driver->render (abl, oscTime);
+    float* outs[64];
+    const int n = std::min (nOut, 64);
+    for (int c = 0; c < n; ++c) { std::fill (block[(size_t) c].begin(), block[(size_t) c].end(), 0.0f); outs[c] = block[(size_t) c].data(); }
+    driver->render (outs, n, oscTime);
     oscTime += oscInc;
 }
 
@@ -158,7 +208,7 @@ float ScEngine::controlBus (int index) const
     return (world != nullptr && index >= 0 && index < (int) world->mNumControlBusChannels) ? world->mControlBus[index] : 0.0f;
 }
 
-double ScEngine::avgCpu() const { return driver != nullptr ? driver->GetAvgCPU() : 0.0; }
+double ScEngine::avgCpu() const { return driver != nullptr ? driver->cpu : 0.0; }
 
 void ScEngine::setControl (int index, float value)
 {

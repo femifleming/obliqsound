@@ -3,7 +3,9 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <algorithm>
 #include <cstdlib>
+#include <vector>
 int main (int argc, char** argv)
 {
     const int nOut = 2, base = nOut + 2, mix = base, dly = base + 2, rev = base + 4, field = base + 6, nat = base + 8, vb0 = base + 26;
@@ -47,5 +49,7 @@ int main (int argc, char** argv)
     std::printf ("%d voices%s: rms %.4f peak %.4f finite %d | %.1f%% of real time, worst 256-block %.2f ms (budget 5.33) | VU %.3f %.3f\n",
                  nv, ode ? " + additive" : "", std::sqrt (sum / n), peak, (int) finite, secs / 6 * 100, worst, e.controlBus (gb + 18), e.controlBus (gb + 19));
     e.stop();
-    return 0;
+    const bool ok = finite && std::sqrt (sum / n) > 0.005 && peak < 4.0;
+    std::puts (ok ? "SMOKE TEST PASSED" : "SMOKE TEST FAILED");
+    return ok ? 0 : 1;
 }

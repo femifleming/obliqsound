@@ -5,7 +5,7 @@
 <p align="center">
 A polyphonic synthesizer and field-recording instrument with a living topographic panel, and its spatial twin:<br>
 the same instrument as a third-order Ambisonics sound source for the IEM and SPARTA plug-ins.<br>
-VST3, Audio Unit and a desktop app for each (macOS). The sound engine is SuperCollider's synthesis server, embedded in the plug-in.
+VST3 and a desktop app for each on macOS, Windows and Linux, plus Audio Units on macOS. The sound engine is SuperCollider's synthesis server, embedded in the plug-in.
 </p>
 
 ![ObliqSound](manual/img/sound_tPoly.jpg)
@@ -42,20 +42,36 @@ Download the zips from the [Releases page](../../releases/latest):
 
 | File | What it is |
 | --- | --- |
-| ObliqSound-VST3-macOS.zip / ObliqSonic-VST3-macOS.zip | VST3 plug-ins |
-| ObliqSound-AU-macOS.zip / ObliqSonic-AU-macOS.zip | Audio Units (Logic, GarageBand, MainStage, Ableton Live) |
-| ObliqSound-App-macOS.zip / ObliqSonic-App-macOS.zip | Desktop apps |
+| Obliq*-VST3-macOS.zip, Obliq*-AU-macOS.zip, Obliq*-App-macOS.zip | macOS 11+, Apple silicon and Intel: VST3, Audio Unit, desktop app |
+| Obliq*-VST3-Windows.zip, Obliq*-App-Windows.zip | Windows 10 / 11, 64-bit: VST3, desktop app |
+| Obliq*-VST3-Linux.zip, Obliq*-App-Linux.zip | Linux x86-64 (built on Ubuntu 22.04): VST3, desktop app |
 | ObliqSound_ObliqSonic_Manual.pdf | The manual (also inside each plug-in: Help > Manual) |
 | ObliqSound_Request_Log.pdf | A log of everything the author asked for, and what came of it |
+
+`Obliq*` stands for ObliqSound and ObliqSonic. A `.vst3` is a folder on every system: copy the whole folder.
+
+**macOS**
 
 1. Unzip. Copy `.vst3` to `~/Library/Audio/Plug-Ins/VST3`, `.component` to `~/Library/Audio/Plug-Ins/Components` and the apps to `/Applications`.
 2. The builds are signed ad hoc, not notarised, so macOS will refuse them the first time. Clear the quarantine flag:
    ```sh
    xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Obliq*.vst3 ~/Library/Audio/Plug-Ins/Components/Obliq*.component /Applications/Obliq*.app
    ```
-3. Rescan plug-ins in your DAW. Both are listed under the manufacturer **ObliqSound**.
 
-The plug-ins run on Apple silicon and Intel (macOS 11 or later). Each one is about 100 MB, mostly the rendered landscape frames and the recordings. There is no VST2 version (the VST2 SDK is no longer available).
+**Windows**
+
+1. Unzip. Copy the `ObliqSound.vst3` and `ObliqSonic.vst3` folders to `C:\Program Files\Common Files\VST3`.
+2. The desktop app is a folder with `ObliqSound.exe` and a `Resources` folder: keep them together and run the exe. The builds are not signed, so SmartScreen may ask once ("More info" > "Run anyway").
+3. If a plug-in does not load, install the Microsoft Visual C++ Redistributable (x64).
+
+**Linux**
+
+1. Unzip. Copy the `.vst3` folders to `~/.vst3`.
+2. The desktop app is a folder with the program and a `Resources` folder: keep them together and run `./ObliqSound`. It uses ALSA or JACK.
+
+Rescan plug-ins in your DAW. Both are listed under the manufacturer **ObliqSound**.
+
+Each one is about 100 MB, mostly the rendered landscape frames and the recordings. There is no VST2 version (the VST2 SDK is no longer available).
 
 ### Help
 
@@ -84,9 +100,11 @@ sc/fetch_sc.sh        # once: fetches SuperCollider 3.13.0 and builds its server
 ./build_all.sh        # everything, zipped into dist/
 ```
 
+That is the macOS build, and it also makes the parts that are the same on every system: the art, the layout, the presets and the compiled SynthDefs. The **Windows and Linux** builds are made by the GitHub workflow in `.github/workflows/build.yml`: it builds the server and the plug-ins with MSVC or GCC (`sc/fetch_sc.sh`, then CMake in `plugin/`), takes those shared resources from the release's macOS zips (`ci/package.sh`), runs an engine test and pluginval, and adds the zips to the release.
+
 How it fits together:
 
-- **The engine is scsynth**, SuperCollider's synthesis server, linked into the plug-in and run block by block from the host's audio callback (`sc/ScEngine.cpp`). It opens no audio device and no network port.
+- **The engine is scsynth**, SuperCollider's synthesis server, linked into the plug-in and run block by block from the host's audio callback (`sc/ScEngine.cpp`), through a small driver of our own that is the same on all three systems. It opens no audio device and no network port; the server's CoreAudio, PortAudio and JACK back ends are not used.
 - **`sc/ugens/OblqUGens.cpp`** holds the custom UGens: the morphing zero-delay filter, the polygon oscillator, the 128-partial additive bank and the third-order Ambisonics encoder with distance.
 - **`sc/defs/oblq.scd`** holds the SynthDefs. A voice is a small group of synths (oscillator stack, polygon, additive, field recording, filter) on a private bus.
 - **`plugin/Source/Engine.cpp`** manages the 16 voices and computes every modulator in C++ (envelopes, LFOs, the pin matrix, the swarm, ObliqSonic's motion), writing straight into the server's control buses once per 64-sample block.

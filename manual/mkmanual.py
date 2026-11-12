@@ -100,9 +100,9 @@ def cover(c, d):
     c.drawCentredString(W / 2, 92 * mm, 'OWNER\'S MANUAL')
     c.setFont('Helvetica', 11.5)
     c.drawCentredString(W / 2, 82 * mm, 'Polyphonic synthesizer  /  field-recording sampler  /  third-order Ambisonics encoder')
-    c.drawCentredString(W / 2, 75 * mm, 'VST3  -  Audio Unit  -  desktop app  (macOS)')
+    c.drawCentredString(W / 2, 75 * mm, 'VST3  -  Audio Unit  -  desktop app   (macOS, Windows, Linux)')
     c.setFont('Helvetica', 9); c.setFillColor(colors.HexColor('#0B2416'))
-    c.drawCentredString(W / 2, 20 * mm, 'Version 2.1  -  November 2026')
+    c.drawCentredString(W / 2, 20 * mm, 'Version 2.2  -  November 2026')
 
 def page(c, d):
     W, H = A4
@@ -139,17 +139,20 @@ P('Both share one panel: a mirror-symmetric, organic layout in sage green, drawn
   'Behind the controls is a topographic landscape that slowly drifts all the time and flows into a new shape '
   'whenever you change page.')
 H2('What is in the box')
-TABLE([['Item', 'Where it is installed'],
-       ['ObliqSound.vst3, ObliqSonic.vst3', '~/Library/Audio/Plug-Ins/VST3/'],
-       ['ObliqSound.component, ObliqSonic.component (Audio Units)', '~/Library/Audio/Plug-Ins/Components/'],
-       ['ObliqSound.app, ObliqSonic.app (desktop apps)', '/Applications/'],
+TABLE([['Item', 'Where it goes'],
+       ['ObliqSound.vst3, ObliqSonic.vst3', 'macOS: ~/Library/Audio/Plug-Ins/VST3/<br/>Windows: C:\\Program Files\\Common Files\\VST3\\<br/>Linux: ~/.vst3/'],
+       ['ObliqSound.component, ObliqSonic.component (Audio Units, macOS only)', '~/Library/Audio/Plug-Ins/Components/'],
+       ['Desktop apps', 'macOS: ObliqSound.app and ObliqSonic.app in /Applications/<br/>Windows and Linux: a folder holding the program and its Resources folder; keep the two together, anywhere you like'],
        ['Factory presets', 'inside each plug-in'],
-       ['Your presets', '~/Library/Application Support/ObliqSound/presets.json  (and .../ObliqSonic/presets.json)']],
+       ['Your presets', 'presets.json in a folder named after the instrument, in<br/>macOS: ~/Library/Application Support/<br/>Windows: AppData\\Roaming\\<br/>Linux: ~/.config/']],
       [70, 100])
+P('A .vst3 is a folder on every system (a "bundle"): copy the whole folder, not only the file inside it. The art, presets and recordings live in it.')
 P('Both are instruments, listed under the manufacturer <b>ObliqSound</b>. The sound engine is SuperCollider\'s synthesis server, '
   'embedded in the plug-in: nothing else needs to be installed. There is no VST2 version.')
 H2('Requirements')
-UL(['macOS 11 or later, Apple silicon or Intel.',
+UL(['<b>macOS</b> 11 or later, Apple silicon or Intel.',
+    '<b>Windows</b> 10 or 11, 64-bit. If the plug-in does not load, install the Microsoft Visual C++ Redistributable (x64).',
+    '<b>Linux</b>, x86-64, built on Ubuntu 22.04 (glibc 2.35 or later); the app uses ALSA or JACK.',
     'A host that loads VST3 or Audio Unit instruments (REAPER, Ableton Live, Logic, Bitwig ...), or the desktop apps.',
     'For ObliqSonic: a host that can run a 16-channel track and an Ambisonics decoder (REAPER with the IEM Plug-in Suite or SPARTA '
     'is the reference set-up; see chapter 10).',
@@ -504,7 +507,7 @@ P('The keys are ignored while Command is held.')
 # ============================================================== 13 tech
 H1('14  Technical reference')
 TABLE([['', ''],
-       ['Version', '2.1'],
+       ['Version', '2.2'],
        ['Engine', 'scsynth, the SuperCollider synthesis server (3.13), embedded in the plug-in and run in the host\'s audio callback. Both ObliqSound and ObliqSonic use it for all synthesis and sample playback; there is no other sound engine'],
        ['Custom UGens', 'Morphing zero-delay state-variable filter with drive and comb; 2x oversampled polygon oscillator; 128-partial additive bank; third-order Ambisonics encoder with distance'],
        ['Modulation', 'Computed in C++ once per 64 samples (envelopes, LFOs, pin matrix, swarm, motion) and written straight to the server\'s control buses; filter cutoff is smoothed per sample'],
@@ -516,7 +519,7 @@ TABLE([['', ''],
        ['MIDI', 'Notes, velocity, pitch bend, mod wheel, channel pressure, any 4 CCs (any channel)'],
        ['ObliqSound output', 'Stereo'],
        ['ObliqSonic output', '16 channels, 3rd-order Ambisonics, ACN / SN3D; 22 moving point sources'],
-       ['Formats', 'VST3, Audio Unit, desktop app; Apple silicon and Intel']], [40, 130], head=False)
+       ['Formats', 'macOS (Apple silicon and Intel): VST3, Audio Unit, desktop app. Windows (x64) and Linux (x86-64): VST3, desktop app']], [40, 130], head=False)
 
 H1('15  Troubleshooting')
 TABLE([['Problem', 'What to do'],

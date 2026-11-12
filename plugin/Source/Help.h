@@ -159,7 +159,7 @@ static const HelpTopic kHelp[] = {
   "The white list at the top left holds the factory presets and your own.\n"
   "Save asks for a name and stores the sound: every control, the matrix pins and the CC numbers.\n"
   "Remove deletes the chosen preset if it is one of yours.\n"
-  "Your presets are kept in  ~/Library/Application Support/<name of the instrument>/presets.json\n"
+  "Your presets are kept in presets.json in your application-data folder, under the instrument's name (macOS: ~/Library/Application Support, Windows: AppData/Roaming, Linux: ~/.config).\n"
   "In a host, the sound is also saved with the project.\n"
   "# Randomize\n"
   "Rolls the filters, envelopes, oscillators, effects and the sampler window, and picks a random sampler square at an audible level. "
@@ -181,7 +181,7 @@ static const HelpTopic kHelp[] = {
   "A CC does nothing: the number box of its matrix row must match the controller, and a pin in that row must be pulled up or down.\n"
   "ObliqSonic sounds flat: the track needs 16 channels and a decoder at order 3, SN3D.\n"
   "# About\n"
-  "Version 2.1. The sound is made by SuperCollider's synthesis server (scsynth), built into the plug-in, with custom filter, polygon, additive "
+  "Version 2.2. The sound is made by SuperCollider's synthesis server (scsynth), built into the plug-in, with custom filter, polygon, additive "
   "and Ambisonics units. Nothing else needs to be installed. 16 voices, 16-bit output stage.\n"
   "# More\n"
   "The Manual button below opens the full owner's manual (PDF). Source and downloads: github.com/femifleming/obliqsound", false },

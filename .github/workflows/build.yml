@@ -1,0 +1,95 @@
+name: Windows and Linux builds
+
+# Builds ObliqSound and ObliqSonic (VST3 + desktop app) for Windows and Linux, tests them, and adds the
+# zips to a release. The art, presets, SynthDefs and recordings come from that release's macOS zips.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release to take the resources from and upload to
+        required: true
+        default: v2.2.0
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04, label: Linux }
+          - { os: windows-2022, label: Windows }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Linux dependencies
+        if: runner.os == 'Linux'
+        run: ci/linux_deps.sh && sudo apt-get install -y -qq xvfb
+
+      - name: MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Ninja (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ninja -y --no-progress
+
+      - name: SuperCollider cache
+        uses: actions/cache@v4
+        with:
+          path: third_party
+          key: sc-3.13.0-${{ runner.os }}-${{ hashFiles('sc/fetch_sc.sh') }}
+
+      - name: SuperCollider server
+        run: |
+          [ -n "$(find third_party/sc-build/server/scsynth -name '*scsynth*.a' -o -name '*scsynth*.lib' 2>/dev/null)" ] || sc/fetch_sc.sh
+
+      - name: JUCE
+        run: git clone -q --depth 1 --branch 9.0.5 https://github.com/juce-framework/JUCE.git "$RUNNER_TEMP/JUCE"
+
+      - name: Build
+        run: |
+          export JUCE_DIR="$(cd "$RUNNER_TEMP/JUCE" && pwd -W 2>/dev/null || pwd)"
+          cmake -S plugin -B plugin/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build plugin/build
+
+      - name: Package
+        run: |
+          mkdir -p ci/mac
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -D ci/mac -p "ObliqSound-VST3-macOS.zip" -p "ObliqSonic-VST3-macOS.zip"
+          ci/package.sh ${{ matrix.label }} ci/mac
+
+      - name: Engine test (16 voices through the packaged server plug-ins and SynthDefs)
+        run: |
+          R="$(find plugin/build/ObliqSound_artefacts -type d -name Resources | head -1)"
+          "$(find plugin/build -maxdepth 1 -name 'obliq_smoke*' -type f | head -1)" "$R/plugins" "$R/defs" 16 x
+
+      - name: pluginval
+        run: |
+          curl -sL -o pv.zip "https://github.com/Tracktion/pluginval/releases/download/v1.0.4/pluginval_${{ matrix.label }}.zip"
+          unzip -q -o pv.zip -d pv
+          PV="$(find pv -type f -name 'pluginval*' | head -1)"; chmod +x "$PV"
+          RUN=$([ "$RUNNER_OS" = Linux ] && echo "xvfb-run -a" || echo "")
+          for N in ObliqSound ObliqSonic; do
+            V="$(find plugin/build/${N}_artefacts -type d -name "$N.vst3" | head -1)"
+            $RUN "$PV" --strictness-level 5 --validate-in-process --timeout-ms 600000 --validate "$V"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Obliq-${{ matrix.label }}
+          path: dist/*.zip
+
+      - name: Add to the release
+        run: gh release upload "$TAG" dist/*.zip -R "$GITHUB_REPOSITORY" --clobber
