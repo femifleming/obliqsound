@@ -11,8 +11,9 @@ EXT=$([ "$OS" = Linux ] && echo so || echo scx)
 rm -rf dist ci/tmp && mkdir -p dist ci/tmp
 zipdir() { if command -v zip >/dev/null; then zip -q -r "$1" "$2"; else 7z a -tzip -bso0 -bsp0 "$1" "$2"; fi; }   # zipdir <zip> <folder>
 for N in ObliqSound ObliqSonic; do
-  unzip -q -o "$MAC/$N-VST3-macOS.zip" "$N.vst3/Contents/Resources/*" -d ci/tmp
+  if command -v 7z >/dev/null; then 7z x -y -bso0 -bsp0 "$MAC/$N-VST3-macOS.zip" -oci/tmp; else unzip -q -o "$MAC/$N-VST3-macOS.zip" -d ci/tmp; fi
   SRC=ci/tmp/$N.vst3/Contents/Resources
+  [ -f "$SRC/layout.json" ] && [ -d "$SRC/defs" ] && [ -d "$SRC/art" ] || { echo "resources missing in $MAC/$N-VST3-macOS.zip"; exit 1; }
   rm -rf "$SRC/plugins" && mkdir -p "$SRC/plugins"
   for p in BinaryOpUGens UnaryOpUGens MulAddUGens IOUGens OscUGens LFUGens NoiseUGens DynNoiseUGens FilterUGens DelayUGens PanUGens TriggerUGens ReverbUGens GrainUGens ChaosUGens DemandUGens PhysicalModelingUGens; do
     cp "$(find $SCP $B/scplugins -name "$p.$EXT" 2>/dev/null | head -1)" "$SRC/plugins/"
