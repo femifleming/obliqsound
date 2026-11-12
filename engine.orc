@@ -5,7 +5,7 @@
 ;  sub, FM, wavefolder, nature resonator, glide, chorus, drive,
 ;  ping-pong delay and a sized reverb.
 ; =====================================================================
-ksmps  = 64
+ksmps  = 128
 nchnls = @NCHNLS@
 0dbfs  = 1
 seed 0
@@ -667,7 +667,7 @@ instr 11
       ki += 1
     od
   endif
-  kmdc = (kmdc + 1) % 4
+  kmdc = (kmdc + 1) % 2
   ; kD index: 1 pitch 2 cutoff 3 res 4 pw 5 fold 6 fm 7 sub 8 noise 9 resonate
   ;           10 detune 11 amp 12 pan 13/14 lfo rates (global) 15 delay 16 reverb
   ;           17 order 18 teeth 19 roll 20 OP amt 21 poly level 22 poly fold
@@ -1575,7 +1575,7 @@ instr 2
       if random:k(0, 1) < 0.012 then
         kidir = -kidir
       endif
-      kidl = (kidl + kidir + @NIDLE@) % @NIDLE@
+      kidl = (kidl + kidir * 2 + @NIDLE@) % @NIDLE@        ; two shapes per redraw: same speed, half the drawing
     endif
     if kidl == 0 then
       Sbgi sprintfk "bg_%d_0.png", kcur
@@ -1921,7 +1921,7 @@ instr 50
   aW = gaAmb[0] * kvol
   kpk max_k aW, 1, 1
   klim init 0
-  klim = (kpk > klim ? kpk : klim * 0.9993)
+  klim = (kpk > klim ? kpk : klim * 0.975)
   kgl = (klim > 0.9 ? 0.9 / klim : 1)
   kgl portk kgl, 0.003
   kgo = kvol * kgl
@@ -1941,6 +1941,24 @@ instr 50
   a13 = gaAmb[13] * kgo
   a14 = gaAmb[14] * kgo
   a15 = gaAmb[15] * kgo
+  ; 16-bit output on every channel
+  adth rand 0.5
+  a0 = round(a0 * 32767 + adth) / 32767
+  a1 = round(a1 * 32767 + adth) / 32767
+  a2 = round(a2 * 32767 + adth) / 32767
+  a3 = round(a3 * 32767 + adth) / 32767
+  a4 = round(a4 * 32767 + adth) / 32767
+  a5 = round(a5 * 32767 + adth) / 32767
+  a6 = round(a6 * 32767 + adth) / 32767
+  a7 = round(a7 * 32767 + adth) / 32767
+  a8 = round(a8 * 32767 + adth) / 32767
+  a9 = round(a9 * 32767 + adth) / 32767
+  a10 = round(a10 * 32767 + adth) / 32767
+  a11 = round(a11 * 32767 + adth) / 32767
+  a12 = round(a12 * 32767 + adth) / 32767
+  a13 = round(a13 * 32767 + adth) / 32767
+  a14 = round(a14 * 32767 + adth) / 32767
+  a15 = round(a15 * 32767 + adth) / 32767
   outch 1, a0, 2, a1, 3, a2, 4, a3, 5, a4, 6, a5, 7, a6, 8, a7, 9, a8, 10, a9, 11, a10, 12, a11, 13, a12, 14, a13, 15, a14, 16, a15
   ; a virtual cardioid pair (left / right) for the meters, the scopes and the followers
   aL = (a0 + a1) * 0.5
@@ -1968,7 +1986,7 @@ instr 50
   kpkr max_k aR, 1, 1
   kpk = max(kpkl, kpkr)
   klim init 0
-  klim = (kpk > klim ? kpk : klim * 0.992)
+  klim = (kpk > klim ? kpk : klim * 0.97)
   kgl = (klim > 0.89 ? 0.89 / klim : 1)
   agl interp kgl
   agl tone agl, 400
@@ -1976,6 +1994,10 @@ instr 50
   aR = aR * agl
   aL clip aL, 0, 0.99
   aR clip aR, 0, 0.99
+  ; 16-bit output: quantised to 65536 levels, with half a step of dither
+  adth rand 0.5
+  aL = round(aL * 32767 + adth) / 32767
+  aR = round(aR * 32767 - adth) / 32767
   outs aL, aR
   gaOutPrev = (aL + aR) * 0.5
   gkVuL rms aL, 12
@@ -2209,9 +2231,9 @@ instr 5
     kinit = 0
   endif
 
-  kup metro 100
+  kup metro 40
   if kup == 1 then
-    idt = 0.01
+    idt = 0.025
     kspd = 0.08 + gkSpSpeed * 1.4
     kdev = gkSpDev
     ; ---- flock
@@ -2300,13 +2322,13 @@ instr 5
       ki += 1
     od
     ; ---- deviated Lorenz: every point its own attractor
-    kldt = 0.0015 + gkSpSpeed * 0.012
+    kldt = (0.0015 + gkSpSpeed * 0.012) * 1.25
     ki = 0
     while ki < iN do
       ksg = 10 * (1 + kDS[ki] * kdev * 0.4)
       kro = 28 * (1 + kDR[ki] * kdev * 0.3)
       kst = 0
-      while kst < 2 do
+      while kst < 4 do
         klx = kLX[ki]
         kly = kLY[ki]
         klz = kLZ[ki]
@@ -2399,14 +2421,14 @@ instr 5
     kwG *= knb
     ki = 0
     while ki < iN do
-      if random:k(0, 1) < 0.004 + gkSpSpeed * 0.01 then
+      if random:k(0, 1) < 0.01 + gkSpSpeed * 0.025 then
         kWX[ki] = random:k(-1, 1)
         kWY[ki] = random:k(-1, 1)
         kWZ[ki] = random:k(-1, 1)
       endif
-      kOX[ki] = kOX[ki] + (kWX[ki] - kOX[ki]) * 0.008
-      kOY[ki] = kOY[ki] + (kWY[ki] - kOY[ki]) * 0.008
-      kOZ[ki] = kOZ[ki] + (kWZ[ki] - kOZ[ki]) * 0.008
+      kOX[ki] = kOX[ki] + (kWX[ki] - kOX[ki]) * 0.02
+      kOY[ki] = kOY[ki] + (kWY[ki] - kOY[ki]) * 0.02
+      kOZ[ki] = kOZ[ki] + (kWZ[ki] - kOZ[ki]) * 0.02
       ki += 1
     od
     kfcx = 0
@@ -2447,9 +2469,9 @@ instr 5
   ; glide every point to its target (no zipper in the encoder gains)
   ki = 0
   while ki < 22 do
-    gkPX[ki] = gkPX[ki] + (gkTX[ki] - gkPX[ki]) * 0.004
-    gkPY[ki] = gkPY[ki] + (gkTY[ki] - gkPY[ki]) * 0.004
-    gkPZ[ki] = gkPZ[ki] + (gkTZ[ki] - gkPZ[ki]) * 0.004
+    gkPX[ki] = gkPX[ki] + (gkTX[ki] - gkPX[ki]) * 0.016
+    gkPY[ki] = gkPY[ki] + (gkTY[ki] - gkPY[ki]) * 0.016
+    gkPZ[ki] = gkPZ[ki] + (gkTZ[ki] - gkPZ[ki]) * 0.016
     ki += 1
   od
 endin
@@ -2483,9 +2505,11 @@ FSKIP:
   rireturn
   kon = (gkNatSel > 8 ? 1 : 0)
   kbl portk kon * 0.6 * (1 - exp(-gkSamp * 25 / 0.6)), 0.02
+  if kbl < 0.0002 kgoto FC_END              ; sampler off: this copy costs nothing
   a1 = a1 * kbl * 0.62 * gkFNorm
   ip = 12 + icp
   SpPoint a1, gkPX[ip], gkPY[ip], gkPZ[ip], gkSpSpread, gkSpAir
+FC_END:
 endin
 #end
 

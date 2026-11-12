@@ -100,9 +100,9 @@ def cover(c, d):
     c.drawCentredString(W / 2, 92 * mm, 'OWNER\'S MANUAL')
     c.setFont('Helvetica', 11.5)
     c.drawCentredString(W / 2, 82 * mm, 'Polyphonic synthesizer  /  field-recording sampler  /  third-order Ambisonics encoder')
-    c.drawCentredString(W / 2, 75 * mm, 'VST3  -  VST2  -  desktop app  (macOS, Apple silicon)')
+    c.drawCentredString(W / 2, 75 * mm, 'VST3  -  Audio Unit  -  desktop app  (macOS)')
     c.setFont('Helvetica', 9); c.setFillColor(colors.HexColor('#0B2416'))
-    c.drawCentredString(W / 2, 20 * mm, 'Version 1.0  -  November 2026')
+    c.drawCentredString(W / 2, 20 * mm, 'Version 2.0  -  November 2026')
 
 def page(c, d):
     W, H = A4
@@ -140,22 +140,20 @@ P('Both share one panel: a mirror-symmetric, organic layout in sage green, drawn
   'whenever you change page.')
 H2('What is in the box')
 TABLE([['Item', 'Where it is installed'],
-       ['ObliqSound.vst3', '~/Library/Audio/Plug-Ins/VST3/'],
-       ['ObliqSound.vst (VST2)', '~/Library/Audio/Plug-Ins/VST/'],
-       ['ObliqSonic.vst3', '~/Library/Audio/Plug-Ins/VST3/'],
-       ['ObliqSonic.vst (VST2)', '~/Library/Audio/Plug-Ins/VST/'],
-       ['ObliqSound.app (desktop app)', '/Applications/  -  the ObliqSound engine as a stand-alone instrument'],
-       ['Presets', '/Users/Shared/ObliqSound/ObliqSound presets.snaps  and  /Users/Shared/ObliqSonic/ObliqSonic presets.snaps'],
-       ['App settings', '~/Library/Application Support/ObliqSound/ (last sound, audio + MIDI devices, window position)']],
-      [52, 118])
-P('Both plug-ins are instruments (they appear under the manufacturer name the host shows for Cabbage plug-ins). '
-  'They have different plug-in IDs, so ObliqSound, ObliqSonic and the original Kia instrument can all be used in the same project.')
+       ['ObliqSound.vst3, ObliqSonic.vst3', '~/Library/Audio/Plug-Ins/VST3/'],
+       ['ObliqSound.component, ObliqSonic.component (Audio Units)', '~/Library/Audio/Plug-Ins/Components/'],
+       ['ObliqSound.app, ObliqSonic.app (desktop apps)', '/Applications/'],
+       ['Factory presets', 'inside each plug-in'],
+       ['Your presets', '~/Library/Application Support/ObliqSound/presets.json  (and .../ObliqSonic/presets.json)']],
+      [70, 100])
+P('Both are instruments, listed under the manufacturer <b>ObliqSound</b>. The sound engine is SuperCollider\'s synthesis server, '
+  'embedded in the plug-in: nothing else needs to be installed. There is no VST2 version.')
 H2('Requirements')
-UL(['macOS 11 or later on Apple silicon.',
-    'A host that loads VST3 or VST2 instruments (REAPER, Ableton Live, Bitwig, Logic via a VST wrapper, etc.), or the desktop app.',
+UL(['macOS 11 or later, Apple silicon or Intel.',
+    'A host that loads VST3 or Audio Unit instruments (REAPER, Ableton Live, Logic, Bitwig ...), or the desktop apps.',
     'For ObliqSonic: a host that can run a 16-channel track and an Ambisonics decoder (REAPER with the IEM Plug-in Suite or SPARTA '
-    'is the reference set-up; see chapter 11).',
-    'CPU: ObliqSound uses roughly 35-45 % of one performance core at 48 kHz with a few voices; ObliqSonic about 60-70 %.'])
+    'is the reference set-up; see chapter 10).',
+    'CPU: light. Sixteen voices with every layer on use roughly an eighth of one core at 48 kHz.'])
 
 # ============================================================== 2 quick start
 H1('2  Quick start')
@@ -165,9 +163,9 @@ UL(['Put <b>ObliqSound</b> on an instrument track and play. The default sound is
     'Click the page buttons under the display (POLYGON, ODESSA, LESTER, LFO, MATRIX, SWARM, and SPACE on ObliqSonic) to open the lower panel.',
     'Choose presets from the white list at the top left (133 included); <b>Randomize</b> rolls a new sound.'])
 H2('As a desktop app')
-UL(['Open <b>ObliqSound</b> from /Applications. Choose your audio output and MIDI inputs under <b>Options > Audio / MIDI Settings...</b> (all MIDI inputs are enabled automatically, including ones you plug in later).',
+UL(['Open <b>ObliqSound</b> or <b>ObliqSonic</b> from /Applications. The <b>Options</b> button at the top left opens the audio and MIDI settings (all MIDI inputs are enabled automatically, including ones you plug in later).',
     'With no keyboard attached, play from the computer keyboard (chapter 13).',
-    'Quit normally and the app remembers the sound, the devices and the window position.'])
+    'The app remembers the sound and the devices.'])
 H2('ObliqSonic in REAPER (spatial)')
 UL(['Insert <b>ObliqSonic</b> on a track. Click the track\'s <b>Route</b> button and set <b>Track channels: 16</b>.',
     'After it insert a decoder at <b>order 3, SN3D</b>: <b>IEM BinauralDecoder</b> for headphones or <b>IEM AllRADecoder</b> / '
@@ -475,39 +473,40 @@ UL(['<b>Slow evolving pad:</b> ODESSA up, PARTIALS 64, TILT 0.3, LFO 1 > O.DN, B
 
 # ============================================================== 12 desktop app
 H1('12  The desktop app')
-P('<b>ObliqSound.app</b> (in /Applications) is the ObliqSound engine as a stand-alone instrument. It contains its own copy of the plug-in, so it works '
-  'even if the plug-ins are removed.')
-CTRL([['Options > Audio / MIDI Settings...', '', 'Output device, sample rate, buffer size, MIDI inputs. Every MIDI input is enabled at start and new devices are picked up when plugged in.'],
-      ['Options > Computer Keyboard Plays Notes', 'on / off', 'Plays notes from the computer keyboard (below).'],
-      ['Options > All Notes Off', '', 'Silences stuck notes.']])
+P('<b>ObliqSound.app</b> and <b>ObliqSonic.app</b> (in /Applications) are the instruments on their own, with no DAW.')
+CTRL([['Options (top left)', '', 'Audio output, sample rate, buffer size and MIDI inputs. Every MIDI input is turned on at start, and new devices are picked up when plugged in.'],
+      ['Computer keyboard', '', 'Plays notes (below). Click the panel first so it has the keyboard.'],
+      ['ObliqSonic: output', 'size list', 'The size list at the top right also chooses the output: <b>stereo</b> (a decode to two virtual cardioids, the default in the app) '
+       'or <b>16-channel Ambisonics</b> for an interface or virtual device with 16 outputs.']])
 TABLE([['Keys', 'Notes'],
        ['A  W  S  E  D  F  T  G  Y  H  U  J  K  O  L  P  ;  \'', 'C  C#  D  D#  E  F  F#  G  G#  A  A#  B  C  C#  D  D#  E  F'],
        ['Z / X', 'Octave down / up'],
        ['C / V', 'Velocity down / up (steps of 20, starts at 100)']], [70, 100])
-P('The keys are read by position, so they work on any keyboard layout. They are ignored while you type in a text field or hold Command or Control.')
+P('The keys are ignored while Command is held.')
 
 # ============================================================== 13 tech
 H1('13  Technical reference')
 TABLE([['', ''],
-       ['Engine', 'Csound 6.16 orchestra hosted in a Cabbage 2.8 plug-in shell; generated by a Python build script'],
-       ['Polyphony', 'Up to 24 voices; every engine (VCO, polygon, Odessa, keys layer, nature resonator, drone) is polyphonic'],
-       ['Sample rate', 'Any; internal control rate = sample rate / 32'],
-       ['Field recordings', '18 loops, 8 s, 16-bit stereo WAV, in the plug-in bundle (Contents/samples)'],
-       ['Swarm', '8 boids + Lorenz attractor modulating 80 (ObliqSound) / 92 (ObliqSonic) parameters'],
+       ['Engine', 'scsynth, the SuperCollider synthesis server (3.13), embedded in the plug-in and run in the host\'s audio callback'],
+       ['Custom UGens', 'Morphing zero-delay state-variable filter with drive and comb; 2x oversampled polygon oscillator; 128-partial additive bank; third-order Ambisonics encoder with distance'],
+       ['Modulation', 'Computed in C++ once per 64 samples (envelopes, LFOs, pin matrix, swarm, motion) and written straight to the server\'s control buses; filter cutoff is smoothed per sample'],
+       ['Polyphony', '16 voices with oldest-note stealing; a held VCA INIT chord keeps at most 8 notes'],
+       ['Output stage', 'Look-ahead limiter, then 16-bit quantisation with dither'],
+       ['Field recordings', '18 loops, 8 s, 16-bit stereo WAV, level-matched'],
+       ['Swarm', '8 boids + Lorenz attractor moving the timbre parameters (never pitch, tuning, playback speed or levels)'],
        ['Matrix', '22 sources x 36 destinations (ObliqSound), x 42 (ObliqSonic); up to 128 active pins'],
-       ['MIDI', 'Notes, velocity, pitch bend, mod wheel, channel pressure, any 4 CCs (omni)'],
+       ['MIDI', 'Notes, velocity, pitch bend, mod wheel, channel pressure, any 4 CCs (any channel)'],
        ['ObliqSound output', 'Stereo'],
        ['ObliqSonic output', '16 channels, 3rd-order Ambisonics, ACN / SN3D; 22 moving point sources'],
-       ['Plug-in IDs', 'ObliqSound: Oblq.  ObliqSonic: Oblc.  (The original Kia instrument keeps its own.)']], [40, 130], head=False)
+       ['Formats', 'VST3, Audio Unit, desktop app; Apple silicon and Intel']], [40, 130], head=False)
 
 H1('14  Troubleshooting')
 TABLE([['Problem', 'What to do'],
        ['ObliqSonic sounds only in stereo or from one side', 'The track has fewer than 16 channels, or the decoder is missing. Set Track channels: 16 and insert a decoder at order 3, SN3D.'],
        ['ObliqSonic image is blurred or too bright', 'Check the decoder\'s order (3) and normalisation (SN3D).'],
-       ['The panel looks frozen after loading', 'Close and reopen the plug-in window; the panel re-sends its state twice a second.'],
-       ['Crackles', 'Raise the host\'s buffer size (256 or 512). ObliqSonic needs more CPU than ObliqSound; turn ODESSA down to 0 when not used.'],
+       ['Crackles', 'Raise the host\'s buffer size (256 or 512).'],
        ['A CC does nothing', 'Check the number box in the matrix spine matches the CC your controller sends, and that a pin in that row is pulled up or down.'],
-       ['Stuck notes in the app', 'Options > All Notes Off.'],
+       ['Stuck notes', 'Send MIDI all-notes-off (CC 123), or play and release the note again.'],
        ['The bed is silent', 'SAMPLER is at 0, or a nature square is chosen with a very low level. Randomize always picks a square and an audible level.']],
       [55, 115])
 

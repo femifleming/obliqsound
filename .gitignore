@@ -56,3 +56,12 @@ brand/
 work/*
 !work/*.py
 !work/*.sh
+
+# SuperCollider source and build (fetched by scripts)
+third_party/
+
+# v2 builds
+plugin/build/
+plugin/*.log
+sc/build/
+work/tmp/

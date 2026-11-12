@@ -532,7 +532,7 @@ GREEN = np.array([115, 174, 138], float)
 rng_ = np.random.default_rng(11)
 NFR = 6                                                   # morph frames each way
 NIDLE = int(os.environ.get('NIDLE', 120))                                               # idle-drift loop frames per page (24 fps -> a 5 s loop)
-IDLE_FPS = 12
+IDLE_FPS = 10
 RINGS = [(0, 1.00), (7, 0.80), (15, 0.66), (24, 0.55), (34, 0.46), (45, 0.38), (57, 0.31), (70, 0.25), (84, 0.20)]
 
 def brushed(h, w, amt, seed=0):
@@ -836,7 +836,7 @@ rnd.append(f'    cabbageSetValue "waveform", int(random:k(1, 4.99)), krnt')
 rnd.append(f'    krsel = int(random:k(1, {NS} + 0.999))')
 rnd += [f'    cabbageSetValue "S{i}", (krsel == {i} ? 1 : 0), krnt' for i in range(1, NS + 1)]
 rnd.append('    cabbageSetValue "AmpSamp", random:k(0.03, 0.12), krnt')
-pinread_l = ['  kpcnt init 0', '  kpcnt += 1', '  if kpcnt % 12 == 1 then', '    kpn = 0']
+pinread_l = ['  kpcnt init 0', '  kpcnt += 1', '  if kpcnt % 6 == 1 then', '    kpn = 0']
 for ch, si, di in PINS:
     pinread_l += [f'    kpv chnget "{ch}"', '    if abs(kpv) > 0.0005 && kpn < 128 then',
                   f'      gkPinS[kpn] = {si}', f'      gkPinD[kpn] = {di}', '      gkPinA[kpn] = kpv', '      kpn += 1', '    endif']
@@ -872,7 +872,7 @@ for i in range(24):
 lzd.append('  endif')
 lzdots = '\n'.join(lzd)
 # MIDI CC rows: any channel, the most recently moved one wins; the CC number is chosen in the matrix spine
-ccr = ['  ; ---- the four MIDI CC rows of the matrix (generated)']
+ccr = ['  ; ---- the four MIDI CC rows of the matrix (generated); polled every 8th control cycle', '  kccdec init 0', '  kccdec = (kccdec + 1) % 4', '  if kccdec != 0 kgoto CC_SKIP']
 for k_ in range(1, 5):
     ccr += [f'  kccn{k_} chnget "ccn{k_}"', f'  kccc{k_} changed kccn{k_}', f'  if kccc{k_} == 1 then', f'    reinit CCR{k_}', '  endif',
             f'CCR{k_}:', f'  icn{k_} limit i(kccn{k_}), 0, 127']
@@ -881,6 +881,7 @@ for k_ in range(1, 5):
     for ch in range(1, 17):
         ccr += [f'  kd{k_}_{ch} changed kc{k_}_{ch}', f'  if kd{k_}_{ch} == 1 then', f'    kcv{k_} = kc{k_}_{ch}', '  endif']
     ccr += [f'  gkCC[{k_ - 1}] portk kcv{k_}, 0.01']
+ccr.append('CC_SKIP:')
 ccread = '\n'.join(ccr)
 spd = []
 if SONIC:

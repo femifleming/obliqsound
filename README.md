@@ -5,7 +5,7 @@
 <p align="center">
 A polyphonic synthesizer and field-recording instrument with a living topographic panel, and its spatial twin:<br>
 the same instrument as a third-order Ambisonics sound source for the IEM and SPARTA plug-ins.<br>
-VST3, VST2 and a desktop app for each (macOS).
+VST3, Audio Unit and a desktop app for each (macOS). The sound engine is SuperCollider's synthesis server, embedded in the plug-in.
 </p>
 
 ![ObliqSound](manual/img/sound_tPoly.jpg)
@@ -14,9 +14,9 @@ VST3, VST2 and a desktop app for each (macOS).
 
 ## What they are
 
-**ObliqSound** grew out of the free [Kia instrument by AudioFB](https://www.kvraudio.com/product/kia-instrument-by-audiofb) (a small Cabbage/Csound synth with nature samples). It keeps that instrument's controls and presets, and adds a lot:
+**ObliqSound** grew out of the free [Kia instrument by AudioFB](https://www.kvraudio.com/product/kia-instrument-by-audiofb) (a small synth with nature samples). It keeps that instrument's controls and presets, runs on a new engine, and adds a lot:
 
-- **Polyphony** across every sound engine, with a polyphonic VCA INIT drone.
+- **16-voice polyphony** across every sound source, with voice stealing and a polyphonic VCA INIT drone.
 - **A polygonal oscillator** (inspired by the E-RM Polygogo) and **an additive oscillator** (after the XAOC Devices Odessa), alongside the virtual-analogue stack.
 - **A dual morphing filter** after the Industrial Music Electronics *Bionic Lester*: LP > BP > HP > notch > comb, with five link modes.
 - **A sampler** of 8 generated nature scenes and 18 field recordings, numbered in Ge'ez numerals. Each loop's start and end points drift slowly all the time, and the recordings can also be played from the keys.
@@ -43,25 +43,25 @@ Download the zips from the [Releases page](../../releases/latest):
 | File | What it is |
 | --- | --- |
 | ObliqSound-VST3-macOS.zip / ObliqSonic-VST3-macOS.zip | VST3 plug-ins |
-| ObliqSound-VST2-macOS.zip / ObliqSonic-VST2-macOS.zip | VST2 plug-ins |
-| ObliqSound-App-macOS.zip / ObliqSonic-App-macOS.zip | Desktop apps (each contains its own plug-in) |
+| ObliqSound-AU-macOS.zip / ObliqSonic-AU-macOS.zip | Audio Units (Logic, GarageBand, MainStage, Ableton Live) |
+| ObliqSound-App-macOS.zip / ObliqSonic-App-macOS.zip | Desktop apps |
 | ObliqSound_ObliqSonic_Manual.pdf | The manual |
 
-1. Unzip. Copy `.vst3` to `~/Library/Audio/Plug-Ins/VST3`, `.vst` to `~/Library/Audio/Plug-Ins/VST` and the apps to `/Applications`.
+1. Unzip. Copy `.vst3` to `~/Library/Audio/Plug-Ins/VST3`, `.component` to `~/Library/Audio/Plug-Ins/Components` and the apps to `/Applications`.
 2. The builds are signed ad hoc, not notarised, so macOS will refuse them the first time. Clear the quarantine flag:
    ```sh
-   xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Obliq*.vst3 ~/Library/Audio/Plug-Ins/VST/Obliq*.vst /Applications/Obliq*.app
+   xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Obliq*.vst3 ~/Library/Audio/Plug-Ins/Components/Obliq*.component /Applications/Obliq*.app
    ```
-3. Rescan plug-ins in your DAW. Both plug-ins are listed under the manufacturer **Obliq**.
+3. Rescan plug-ins in your DAW. Both are listed under the manufacturer **ObliqSound**.
 
-The plug-ins run on Apple silicon and Intel (macOS 11 or later). Each one is about 130 MB, mostly the rendered landscape frames and the recordings.
+The plug-ins run on Apple silicon and Intel (macOS 11 or later). Each one is about 100 MB, mostly the rendered landscape frames and the recordings. There is no VST2 version (the VST2 SDK is no longer available).
 
 ### The desktop apps
 
-- **Audio and MIDI:** set them under **Options > Audio / MIDI Settings...**. Every MIDI input is enabled, including devices you plug in later.
+- **Audio and MIDI:** the **Options** button at the top left of the window opens the audio and MIDI settings. Every MIDI input is turned on automatically, including devices you plug in later.
 - **Computer keyboard:** A W S E D F T G Y H U J K O L P ; ' play the notes. Z / X change the octave and C / V the velocity.
-- **Memory:** each app remembers its sound, devices and window.
-- **ObliqSonic output:** **Options > Output** chooses between **Stereo**, a decode to a virtual cardioid pair, and **16-channel Ambisonics** for an interface or virtual device with 16 outputs.
+- **Memory:** each app remembers its sound and devices.
+- **ObliqSonic output:** the size list at the top right also chooses the output: **stereo**, a decode to a virtual cardioid pair (the default in the app), or **16-channel Ambisonics** for an interface or virtual device with 16 outputs.
 
 ### ObliqSonic with IEM / SPARTA (REAPER)
 
@@ -71,22 +71,23 @@ The plug-ins run on Apple silicon and Intel (macOS 11 or later). Each one is abo
 
 ## Build from source
 
-You need Python 3 with numpy, scipy, Pillow and reportlab, Csound 6 or 7 on the command line for the tests, CMake and a JUCE checkout for the apps (`JUCE_DIR=/path/to/JUCE`).
+You need Xcode's command-line tools, CMake, Ninja, a JUCE checkout (`JUCE_DIR=/path/to/JUCE`), SuperCollider.app (for `sclang`, which compiles the SynthDefs) and Python 3 with numpy, scipy and Pillow.
 
 ```sh
 python3 -m venv .venv && .venv/bin/pip install numpy scipy pillow reportlab
-./build.sh                                      # ObliqSound.vst3 -> build/
-NAME=ObliqSonic ID=Oblc ./build.sh              # ObliqSonic.vst3
-./build_vst2.sh                                 # VST2 (same NAME/ID variables)
-NAME=ObliqSonic ./build_app.sh build/apps       # a desktop app
-./make_release.sh                               # everything, zipped into dist/
+sc/fetch_sc.sh        # once: fetches SuperCollider 3.13.0 and builds its server as a library
+./build_all.sh        # everything, zipped into dist/
 ```
 
-- `engine.orc` is the whole Csound engine. ObliqSonic's spatial side is in its `#ifdef SONIC` blocks.
-- `gen.py` writes the Cabbage panel and checks its symmetry. It also renders the topographic frames (cached in `src/.bgcache.json`; the first run takes several minutes) and writes the presets.
-- `build.sh` wraps the result in the Cabbage 2.8 plug-in shell in `shell/` and gives it its own plug-in IDs and manufacturer name (`shell/patch_vendor.py`).
-- `app/` is the JUCE desktop host, `host/` a headless test host, and `work/dbg.py` renders the engine with the Csound command line.
-- `manual/mkmanual.py` builds the PDF.
+How it fits together:
+
+- **The engine is scsynth**, SuperCollider's synthesis server, linked into the plug-in and run block by block from the host's audio callback (`sc/ScEngine.cpp`). It opens no audio device and no network port.
+- **`sc/ugens/OblqUGens.cpp`** holds the custom UGens: the morphing zero-delay filter, the polygon oscillator, the 128-partial additive bank and the third-order Ambisonics encoder with distance.
+- **`sc/defs/oblq.scd`** holds the SynthDefs. A voice is a small group of synths (oscillator stack, polygon, additive, field recording, filter) on a private bus.
+- **`plugin/Source/Engine.cpp`** manages the 16 voices and computes every modulator in C++ (envelopes, LFOs, the pin matrix, the swarm, ObliqSonic's motion), writing straight into the server's control buses once per 64-sample block.
+- **`plugin/Source/PluginEditor.cpp`** draws the whole panel as one component from `layout.json`.
+- **`gen.py`** designs the panel: it places every control in mirror symmetry, renders the art and the topographic frames, and writes the presets. `export_layout.py` turns its output into `layout.json`.
+- `host/` is a headless test host, and `manual/mkmanual.py` builds the PDF.
 
 ## Human contributions
 
@@ -116,11 +117,17 @@ ObliqSound and ObliqSonic were written with Claude Code (Anthropic), working und
   - Where the page buttons go.
 - **Sound checks.** The author caught the field-recording level rising too steeply and asked for the gain staging to be fixed.
 - **ObliqSonic's concept.** A multichannel IEM / SPARTA encoder of this instrument, moved by flocking, boids, deviated Lorenz attractors and gravity. Each field recording is copied and flies around with its own modulators for its start and end points.
-- **The formats and the release.** VST3 and VST2, desktop apps for both, a full PDF manual, and publishing it here with no Kia logos and a link to the original.
+- **The formats and the release.** Plug-ins and desktop apps for both, a full PDF manual, and publishing it here with no Kia logos and a link to the original.
+- **The engine change.** The author tested the first (Csound) version hard with dense MIDI, reported the distortion, lag and missing voices, and asked for a higher-quality engine built on SuperCollider with a 16-bit output stage.
 
 ## Credits
 
-- The original **[Kia instrument](https://www.kvraudio.com/product/kia-instrument-by-audiofb)** by AudioFB for Kia. ObliqSound uses its Cabbage plug-in shell and is built on its controls and presets. The DSP is new code. No Kia logos or artwork are included.
-- [Cabbage](https://cabbageaudio.com) and [Csound](https://csound.com) run the engine. The desktop apps are built with [JUCE](https://juce.com).
+- **[SuperCollider](https://supercollider.github.io)**: its synthesis server, scsynth, is the sound engine, and the SynthDefs are written in its language.
+- The original **[Kia instrument](https://www.kvraudio.com/product/kia-instrument-by-audiofb)** by AudioFB for Kia: ObliqSound is built on its controls and presets. No Kia code, logos or artwork are included.
+- Built with [JUCE](https://juce.com).
 - The ambisonic conventions follow the [IEM Plug-in Suite](https://plugins.iem.at) and [SPARTA](https://leomccormack.github.io/sparta-site/). The distance model follows the IEM RoomEncoder. No code from either is included.
 - The polygon oscillator, the additive oscillator, the filter and the pin matrix are inspired by the E-RM Polygogo, the XAOC Devices Odessa, the Industrial Music Electronics Bionic Lester and the EMS Synthi. This is an unofficial project, not affiliated with any of these makers or with Kia.
+
+## License
+
+GNU General Public License v3 (see [LICENSE](LICENSE)), as SuperCollider's licence requires. The field recordings and the artwork belong to the author.
