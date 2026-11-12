@@ -9,6 +9,10 @@ on:
         description: Release to take the resources from and upload to
         required: true
         default: v2.2.0
+      only:
+        description: Build only this system (Windows or Linux); empty = both
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -21,6 +25,7 @@ jobs:
         include:
           - { os: ubuntu-22.04, label: Linux }
           - { os: windows-2022, label: Windows }
+    if: ${{ inputs.only == '' || inputs.only == matrix.label }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -61,7 +66,8 @@ jobs:
       - name: Build
         run: |
           export JUCE_DIR="$(cd "$RUNNER_TEMP/JUCE" && pwd -W 2>/dev/null || pwd)"
-          cmake -S plugin -B plugin/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          WIN=$([ "$RUNNER_OS" = Windows ] && echo "-DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_RC_COMPILER=rc" || echo "")
+          cmake -S plugin -B plugin/build -G Ninja -DCMAKE_BUILD_TYPE=Release $WIN
           cmake --build plugin/build
 
       - name: Package
