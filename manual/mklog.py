@@ -112,12 +112,14 @@ PHASES = [
   ('12 Nov', '08:23', 'midi works. i dont see delay time and feedback anywhere, and wheres the adsr for the synth?',
    'Answered: the amp ADSR is on the right wing under FILTER B, the delay controls are on the LFO page. Both answers are now in the built-in help.', INFO),
  ]),
- ('7  Version 2.1: help page, manual, this log', [
+ ('7  Versions 2.1 and 2.2: help page, manual, this log, Windows and Linux', [
   ('12 Nov', '08:25', 'remove the sampler part entirely from both plugins but keep the aesthetic and design as similar as possible.  /  make sure both plugins are supercollider based on the synthesis side',
    'The sampler removal was withdrawn before any work was done (next line). Both plug-ins are SuperCollider-based: all synthesis and sample playback run in the embedded scsynth server, and no Csound is shipped.', DROP),
   ('12 Nov', '08:38', 'nevermind, dont remove the sampler part.', 'The sampler stays exactly as it was.', DONE),
   ('12 Nov', '09:00', 'keep the sampler part, push both of these to github. also update github woth a log of everything ive asked for breaked down in a pdf as a log. make sure you update the manual as well. also add a help page to the vst\'s and standalone desktop apps before you push to github.  /  push it all to github when youre done',
    'Added a Help button (and F1) to both plug-ins and both apps: a help window with ten topics (eleven on ObliqSonic) and a button that opens the manual. Updated the manual with a help chapter. Wrote this log. Pushed everything as version 2.1.', DONE),
+  ('12 Nov', 'c. 09:25', 'make sure latest build of vsts and standalones work on mac windows and linux',
+   'Version 2.2. The engine\'s audio driver was rewritten so one version serves all three systems, and the build was opened to Microsoft\'s compiler and GCC. Windows and Linux VST3s and desktop apps are now built and tested on GitHub\'s machines (a 16-voice engine test and pluginval: load, editor, audio, automation), and all pass. The Linux app was also run and looked at in a container. macOS was rebuilt, installed and validated.', DONE),
  ]),
 ]
 
@@ -127,6 +129,7 @@ OPEN_POINTS = [
  ['Polygon screen', 'The screen draws the shape from the knob positions, not from the audio.'],
  ['Presets', 'The 133 presets were carried over to the new engine by their values; they have not been re-voiced by ear.'],
  ['ObliqSonic in a decoder chain', 'The 16-channel output passes the format checks, but it has not been listened to through the IEM or SPARTA decoders in REAPER as part of this work.'],
+ ['Windows and Linux by hand', 'The Windows and Linux builds pass the automated tests, but nobody has yet played them or heard them in a DAW on those systems. They are not code-signed, so Windows SmartScreen asks once.'],
  ['Delay and ADSR placement', 'An offer to move the delay controls to the main panel and relabel the envelopes was not taken up; nothing was changed.'],
 ]
 
