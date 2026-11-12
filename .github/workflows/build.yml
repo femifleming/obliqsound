@@ -22,10 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { os: ubuntu-22.04, label: Linux }
-          - { os: windows-2022, label: Windows }
-    if: ${{ inputs.only == '' || inputs.only == matrix.label }}
+        include: ${{ fromJSON(inputs.only == 'Windows' && '[{"os":"windows-2022","label":"Windows"}]' || inputs.only == 'Linux' && '[{"os":"ubuntu-22.04","label":"Linux"}]' || '[{"os":"ubuntu-22.04","label":"Linux"},{"os":"windows-2022","label":"Windows"}]') }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
