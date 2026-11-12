@@ -11,6 +11,7 @@ cp "$ROOT"/sc/build/plugins/*.scx "$R/plugins/"
 cp "$ROOT"/sc/build/defs/o*.scsyndef "$R/defs/"
 cp "$ROOT"/samples/*.wav "$ROOT"/samples/index.txt "$R/samples/"
 cp "$ROOT/plugin/Resources/$NAME/layout.json" "$R/layout.json"
+cp "$ROOT/manual/ObliqSound_ObliqSonic_Manual.pdf" "$R/"
 cp "/Users/Shared/$NAME/$NAME presets.snaps" "$R/presets.json"
 # art: every file the layout names, the landscape frames, the read-out images, the font
 python3 - "$ROOT" "$R" "$NAME" "$PFX" <<'PY'

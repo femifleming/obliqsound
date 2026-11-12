@@ -11,6 +11,7 @@ for N in ObliqSound ObliqSonic; do
   .venv/bin/python gen.py src/$N.csd > /dev/null          # panel art, layout source, presets
   .venv/bin/python export_layout.py $N
 done
+.venv/bin/python manual/mkmanual.py > /dev/null && .venv/bin/python manual/mklog.py > /dev/null    # the manual goes inside the bundles
 cmake -S plugin -B plugin/build -G Ninja -DCMAKE_BUILD_TYPE=Release > /dev/null
 cmake --build plugin/build > plugin/build.log
 mkdir -p dist && find dist -name "*.zip" -delete
@@ -22,5 +23,5 @@ for N in ObliqSound ObliqSonic; do
     ditto -c -k --norsrc --noextattr --keepParent "$B" "dist/$N-$K-macOS.zip"
   done
 done
-cp manual/ObliqSound_ObliqSonic_Manual.pdf dist/
+cp manual/ObliqSound_ObliqSonic_Manual.pdf manual/ObliqSound_Request_Log.pdf dist/
 ls -la dist

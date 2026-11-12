@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "Help.h"
 #if JucePlugin_Build_Standalone
  #include <juce_audio_utils/juce_audio_utils.h>
  #include <juce_audio_plugin_client/Standalone/juce_StandaloneFilterWindow.h>
@@ -31,6 +32,7 @@ ObliqPanel::ObliqPanel (ObliqProcessor& p) : proc (p), params (p.params)
     setWantsKeyboardFocus (true);
     lfoH[0].assign (256, 0.0f); lfoH[1].assign (256, 0.0f);
     bg = art (bgName (0, 0, 0));
+    if (auto h = juce::SystemStats::getEnvironmentVariable ("OBLIQ_HELP", {}); h.isNotEmpty()) { helpOpen = true; helpTopic = h.getIntValue(); }   // for screenshots
     startTimerHz (30);
 }
 
@@ -111,6 +113,15 @@ void ObliqPanel::build()
         if (it.group == "200") tabParams.push_back (it.param);
         items.push_back (it);
     }
+    // the Help button takes the right end of the preset list, so the header stays mirrored
+    for (size_t i = 0; i < items.size(); ++i)
+        if (items[i].type == PresetBox)
+        {
+            Item h; h.type = Help; h.channel = "help"; h.text = { "Help" };
+            h.r = items[i].r.removeFromRight (56).withTrimmedLeft (4);
+            items.push_back (h);
+            break;
+        }
 }
 
 // =================================================================================================== timer: pages, background, meters
@@ -223,7 +234,7 @@ void ObliqPanel::drawItem (juce::Graphics& g, const Item& it)
             p.addTriangle (ax, ay, ax + 7.0f, ay, ax + 3.5f, ay + 4.5f); g.fillPath (p);
             break;
         }
-        case Button: case PresetSave: case PresetRemove:
+        case Button: case PresetSave: case PresetRemove: case Help:
         {
             g.setColour (Colour (200, 204, 200)); g.fillRect (r); g.setColour (juce::Colours::white); g.drawLine (r.getX(), r.getY(), r.getRight(), r.getY()); g.drawLine (r.getX(), r.getY(), r.getX(), r.getBottom());
             g.setColour (Colour (70, 74, 70)); g.drawLine (r.getX(), r.getBottom(), r.getRight(), r.getBottom()); g.drawLine (r.getRight(), r.getY(), r.getRight(), r.getBottom());
@@ -373,6 +384,7 @@ void ObliqPanel::paint (juce::Graphics& g)
     }
     g.drawImage (layer, Rectangle<float> (0, 0, (float) baseW, (float) baseH));
     drawDynamic (g);
+    if (helpOpen) drawHelp (g);
 }
 
 // =================================================================================================== interaction
@@ -440,6 +452,7 @@ void ObliqPanel::mouseDown (const juce::MouseEvent& e)
 {
     grabKeyboardFocus();
     const auto p = toPanel (e.position);
+    if (helpOpen) { if (! helpClick (p)) helpOpen = false; return; }
     const int i = hit (p);
     if (i < 0) return;
     auto& it = items[(size_t) i];
@@ -473,6 +486,7 @@ void ObliqPanel::mouseDown (const juce::MouseEvent& e)
             break;
         }
         case PresetRemove: proc.removePreset (proc.currentPreset); break;
+        case Help: helpOpen = true; dragItem = -1; break;
         default: break;
     }
 }
@@ -486,11 +500,12 @@ void ObliqPanel::mouseDrag (const juce::MouseEvent& e)
 }
 
 void ObliqPanel::mouseUp (const juce::MouseEvent&) { dragItem = -1; }
-void ObliqPanel::mouseMove (const juce::MouseEvent& e) { mousePos = toPanel (e.position); hoverItem = hit (mousePos); }
+void ObliqPanel::mouseMove (const juce::MouseEvent& e) { mousePos = toPanel (e.position); hoverItem = helpOpen ? -1 : hit (mousePos); }
 void ObliqPanel::mouseExit (const juce::MouseEvent&) { hoverItem = -1; }
 
 void ObliqPanel::mouseDoubleClick (const juce::MouseEvent& e)
 {
+    if (helpOpen) return;
     const int i = hit (toPanel (e.position));
     if (i >= 0 && items[(size_t) i].param >= 0 && (items[(size_t) i].type == Knob || items[(size_t) i].type == VSlider || items[(size_t) i].type == NSlider))
         params.set (items[(size_t) i].param, params.def (items[(size_t) i].param).def);
@@ -498,6 +513,7 @@ void ObliqPanel::mouseDoubleClick (const juce::MouseEvent& e)
 
 void ObliqPanel::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& w)
 {
+    if (helpOpen) return;
     const int i = hit (toPanel (e.position));
     if (i >= 0 && items[(size_t) i].param >= 0 && (items[(size_t) i].type == Knob || items[(size_t) i].type == VSlider || items[(size_t) i].type == NSlider))
         setParam (i, juce::jlimit (0.0f, 1.0f, params.toNorm (items[(size_t) i].param, params.get (items[(size_t) i].param)) + w.deltaY * 0.15f));
@@ -506,6 +522,13 @@ void ObliqPanel::mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWhe
 // the computer keyboard plays notes: A W S E D F T G Y H U J K O L P ; '   (Z / X octave, C / V velocity)
 bool ObliqPanel::keyPressed (const juce::KeyPress& k)
 {
+    if (k == juce::KeyPress::F1Key) { helpOpen = ! helpOpen; return true; }
+    if (helpOpen && k == juce::KeyPress::escapeKey) { helpOpen = false; return true; }
+    if (helpOpen && (k == juce::KeyPress::upKey || k == juce::KeyPress::downKey))
+    {
+        const int n = (int) helpTopics().size();
+        helpTopic = (helpTopic + (k == juce::KeyPress::downKey ? 1 : n - 1)) % n; return true;
+    }
     const auto c = juce::CharacterFunctions::toLowerCase (k.getTextCharacter());
     if (c == 'z') { kbOctave = juce::jmax (-3, kbOctave - 1); return true; }
     if (c == 'x') { kbOctave = juce::jmin (4, kbOctave + 1); return true; }
@@ -525,6 +548,87 @@ bool ObliqPanel::keyStateChanged (bool)
         else if (! down && was) { proc.keyboard.noteOff (1, heldKeys[i], 0.0f); heldKeys.erase (i); used = true; }
     }
     return used;
+}
+
+// =================================================================================================== help
+std::vector<int> ObliqPanel::helpTopics() const
+{
+    std::vector<int> t;
+    for (int i = 0; i < (int) (sizeof (kHelp) / sizeof (kHelp[0])); ++i) if (OBLIQ_SONIC || ! kHelp[i].sonicOnly) t.push_back (i);
+    return t;
+}
+
+namespace
+{
+    void bevel (juce::Graphics& g, Rectangle<float> r, bool raised)
+    {
+        g.setColour (raised ? juce::Colours::white : Colour (70, 74, 70)); g.fillRect (r.getX(), r.getY(), r.getWidth(), 1.0f); g.fillRect (r.getX(), r.getY(), 1.0f, r.getHeight());
+        g.setColour (raised ? Colour (70, 74, 70) : juce::Colours::white); g.fillRect (r.getX(), r.getBottom() - 1.0f, r.getWidth(), 1.0f); g.fillRect (r.getRight() - 1.0f, r.getY(), 1.0f, r.getHeight());
+    }
+    Rectangle<float> helpTopicRect (Rectangle<float> w, int i) { return { w.getX() + 10.0f, w.getY() + 34.0f + (float) i * 26.0f, 118.0f, 22.0f }; }
+    Rectangle<float> helpCloseRect (Rectangle<float> w) { return { w.getRight() - 21.0f, w.getY() + 5.0f, 16.0f, 14.0f }; }
+    Rectangle<float> helpManualRect (Rectangle<float> w) { return { w.getX() + 10.0f, w.getBottom() - 34.0f, 118.0f, 22.0f }; }
+}
+
+void ObliqPanel::drawHelp (juce::Graphics& g)
+{
+    auto bold = [&] (float h) { return face != nullptr ? juce::Font (juce::FontOptions (face).withHeight (h)) : juce::Font (juce::FontOptions (h, juce::Font::bold)); };
+    const juce::Font plain (juce::FontOptions ("Tahoma", 12.5f, juce::Font::plain));
+    const auto w = helpWindow();
+    const auto topics = helpTopics();
+    helpTopic = juce::jlimit (0, (int) topics.size() - 1, helpTopic);
+
+    g.setColour (Colour (0x70081610)); g.fillRect (0, 0, baseW, baseH);
+    g.setColour (Colour (0x50000000)); g.fillRect (w.translated (4.0f, 4.0f));
+    g.setColour (Colour (200, 204, 200)); g.fillRect (w); g.setColour (juce::Colours::black); g.drawRect (w.expanded (1.0f), 1.0f); bevel (g, w, true);
+
+    // title bar
+    const Rectangle<float> bar (w.getX() + 3.0f, w.getY() + 3.0f, w.getWidth() - 6.0f, 18.0f);
+    g.setGradientFill (juce::ColourGradient (Colour (34, 78, 52), bar.getX(), 0.0f, Colour (115, 174, 138), bar.getRight(), 0.0f, false)); g.fillRect (bar);
+    g.setColour (juce::Colours::white); g.setFont (bold (12.0f));
+    g.drawText (String (JucePlugin_Name) + " Help", bar.reduced (6.0f, 0.0f), juce::Justification::centredLeft);
+    const auto cl = helpCloseRect (w);
+    g.setColour (Colour (200, 204, 200)); g.fillRect (cl); bevel (g, cl, true);
+    g.setColour (juce::Colours::black); g.drawLine (cl.getX() + 4.5f, cl.getY() + 3.5f, cl.getRight() - 4.5f, cl.getBottom() - 3.5f, 1.6f); g.drawLine (cl.getRight() - 4.5f, cl.getY() + 3.5f, cl.getX() + 4.5f, cl.getBottom() - 3.5f, 1.6f);
+
+    // topics
+    for (int i = 0; i < (int) topics.size(); ++i)
+    {
+        const auto r = helpTopicRect (w, i); const bool on = i == helpTopic;
+        g.setColour (on ? Colour (115, 174, 138) : Colour (200, 204, 200)); g.fillRect (r); bevel (g, r, ! on);
+        g.setColour (juce::Colours::black); g.setFont (bold (11.0f)); g.drawText (kHelp[topics[(size_t) i]].title, r.translated (on ? 1.0f : 0.0f, on ? 1.0f : 0.0f), juce::Justification::centred);
+    }
+    const auto mr = helpManualRect (w);
+    g.setColour (Colour (200, 204, 200)); g.fillRect (mr); bevel (g, mr, true);
+    g.setColour (juce::Colours::black); g.setFont (bold (11.0f)); g.drawText ("Manual (PDF)", mr, juce::Justification::centred);
+
+    // text
+    const Rectangle<float> box (w.getX() + 138.0f, w.getY() + 34.0f, w.getWidth() - 148.0f, w.getHeight() - 46.0f);
+    g.setColour (juce::Colours::white); g.fillRect (box); bevel (g, box, false);
+    juce::AttributedString as; as.setWordWrap (juce::AttributedString::byWord); as.setLineSpacing (1.5f);
+    juce::StringArray lines; lines.addLines (kHelp[topics[(size_t) helpTopic]].body);
+    bool first = true;
+    for (auto& l : lines)
+    {
+        if (l.startsWith ("# ")) { if (! first) as.append ("\n", juce::Font (juce::FontOptions (5.0f)), juce::Colours::black); as.append (l.substring (2).toUpperCase() + "\n", bold (12.0f), Colour (34, 96, 58)); }
+        else as.append (l + "\n", plain, Colour (8, 22, 14));
+        first = false;
+    }
+    as.draw (g, box.reduced (12.0f, 9.0f));
+}
+
+bool ObliqPanel::helpClick (juce::Point<float> p)
+{
+    const auto w = helpWindow();
+    if (! w.contains (p) || helpCloseRect (w).contains (p)) return false;
+    const int n = (int) helpTopics().size();
+    for (int i = 0; i < n; ++i) if (helpTopicRect (w, i).contains (p)) helpTopic = i;
+    if (helpManualRect (w).contains (p))
+    {
+        auto pdf = ObliqProcessor::resourceDir().getChildFile ("ObliqSound_ObliqSonic_Manual.pdf");
+        if (pdf.existsAsFile()) pdf.startAsProcess(); else juce::URL ("https://github.com/femifleming/obliqsound").launchInDefaultBrowser();
+    }
+    return true;
 }
 
 // =================================================================================================== editor

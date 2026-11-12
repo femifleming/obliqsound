@@ -102,7 +102,7 @@ def cover(c, d):
     c.drawCentredString(W / 2, 82 * mm, 'Polyphonic synthesizer  /  field-recording sampler  /  third-order Ambisonics encoder')
     c.drawCentredString(W / 2, 75 * mm, 'VST3  -  Audio Unit  -  desktop app  (macOS)')
     c.setFont('Helvetica', 9); c.setFillColor(colors.HexColor('#0B2416'))
-    c.drawCentredString(W / 2, 20 * mm, 'Version 2.0  -  November 2026')
+    c.drawCentredString(W / 2, 20 * mm, 'Version 2.1  -  November 2026')
 
 def page(c, d):
     W, H = A4
@@ -161,7 +161,8 @@ H2('In a DAW')
 UL(['Put <b>ObliqSound</b> on an instrument track and play. The default sound is a sawtooth through filter A with a little noise and the wind scene.',
     'Click the square buttons in the middle (the <b>sampler</b>) to choose a nature scene or a field recording; turn <b>SAMPLER</b> up to hear the bed, <b>KEYS</b> to play the recording from the keyboard.',
     'Click the page buttons under the display (POLYGON, ODESSA, LESTER, LFO, MATRIX, SWARM, and SPACE on ObliqSonic) to open the lower panel.',
-    'Choose presets from the white list at the top left (133 included); <b>Randomize</b> rolls a new sound.'])
+    'Choose presets from the white list at the top left (133 included); <b>Randomize</b> rolls a new sound.',
+    'Press <b>Help</b> (beside the preset list) or <b>F1</b> for the built-in help.'])
 H2('As a desktop app')
 UL(['Open <b>ObliqSound</b> or <b>ObliqSonic</b> from /Applications. The <b>Options</b> button at the top left opens the audio and MIDI settings (all MIDI inputs are enabled automatically, including ones you plug in later).',
     'With no keyboard attached, play from the computer keyboard (chapter 13).',
@@ -185,11 +186,12 @@ CTRL([['Preset list', '133 + yours', 'Recalls a preset. Presets include every co
       ['Randomize', '-', 'Rolls a new sound: both filters, envelopes, oscillator, polygon and Odessa settings, the effects, the field-recording '
        'window, the waveform, and picks a <b>random sampler square</b> with an audible SAMPLER level. On ObliqSonic it also rolls the motion (mode, '
        'speed, deviation, gravity, cohesion, field splay, height, rotation).'],
+      ['Help', '-', 'Opens the built-in help window (chapter 12). F1 does the same.'],
       ['Size', '50-200 %', 'Scales the whole window. The art is drawn at pixel resolution, so 100 % or 200 % look the sharpest.']])
 H2('The living background')
 P('The green plate is a topographic map: rings of darker and darker green step away from the area where the controls sit. '
   'It is never still. Mirrored pairs of bulges and lakes travel across the whole landscape, so the land swells, opens lakes between the controls '
-  'and pulls its coast in and out, always symmetrically and never from under a control. Each page has 120 rendered shapes, shown at 24 frames a second; '
+  'and pulls its coast in and out, always symmetrically and never from under a control. Each page has 120 rendered shapes, stepped through ten times a second; '
   'the panel wanders back and forth through them at random, so the motion never repeats. '
   'When you change page the land first settles back to its resting shape, then flows through a shared middle shape into the next page\'s shape; the old controls leave first '
   'and the new ones arrive when the land has settled. The field recordings\' loop points drift on the same clock as the land (chapter 5).')
@@ -324,7 +326,7 @@ CTRL([['PARTIALS', '1 .. 128', 'Number of partials.'],
       ['Gates 1-8', 'on / off', 'Mute or pass the eight groups of partials.'],
       ['TUNE / FINE / SPREAD', '', 'Coarse and fine pitch, and detune spread of the chord voices.'],
       ['EXP FM, LIN FM, DENSITY, WARP CV', '-1 .. 1 / source', 'Four CV sliders, each with a source list (any matrix source).']])
-P('The 12 LEDs above PARTIALS show a live 12-band spectrum of the output.')
+P('The 12 LEDs above PARTIALS are a spectrum strip; in version 2 they are not animated.')
 SHOT('sound_tLest.jpg', 'The LESTER page: CV inputs for A and B, the OLED read-out, the link mode and the A/B mix.')
 H2('LESTER - the dual filter in depth')
 CTRL([['Link mode', '5 modes', '<b>link off</b>: A on the left, B on the right, mixed by MIX. <b>A ctl</b>: B\'s cutoff follows A. <b>series</b>: A then B. '
@@ -471,11 +473,26 @@ UL(['<b>Slow evolving pad:</b> ODESSA up, PARTIALS 64, TILT 0.3, LFO 1 > O.DN, B
     '<b>Spatial rain (ObliqSonic):</b> a water recording, SAMPLER 0.1, MODE 2 (gravity), FIELD SPLAY 1, DISTANCE 6, AIR 0.6.',
     '<b>Chord that explodes outward (ObliqSonic):</b> pin AMP ENV > S.DS (green) and RANDOM > S.AZ: each note starts close and flies off on its own bearing.'])
 
-# ============================================================== 12 desktop app
-H1('12  The desktop app')
+# ============================================================== 12 help
+H1('12  The help window')
+SHOT('sound_help.jpg', 'The help window, open on the VOICE topic.')
+P('Both plug-ins and both desktop apps have a built-in help page. Press <b>Help</b>, beside the preset list at the top left, or <b>F1</b>. '
+  'It opens over the panel as a small window with a list of topics on the left and the text on the right.')
+CTRL([['Topics', '10 (11 on ObliqSonic)', 'START, CONTROLS, VOICE, SAMPLER, PAGES, LFO + DELAY, MATRIX, SWARM, SPACE (ObliqSonic only), PRESETS, APP + ABOUT. '
+       'Click a topic, or use the up and down arrow keys.'],
+      ['Manual (PDF)', 'button', 'Opens this manual, which is included inside each plug-in and app.'],
+      ['Close', 'x, Esc', 'The x in the title bar, the Esc key, F1 again, or a click anywhere outside the window.']])
+P('The instrument keeps playing while help is open, from MIDI and from the computer keyboard, so you can read about a control and hear it. '
+  'The controls under the window cannot be moved until it is closed.')
+NOTE('<b>Two questions the help answers first.</b> The amp <b>ADSR</b> is the four small knobs A D S R on the right wing under FILTER B (AMP ENV); '
+     'the filter envelope is the same four on the left wing. The <b>delay time and feedback</b> are on the LFO page, bottom left, under FOLLOW / DELAY.')
+
+# ============================================================== 13 desktop app
+H1('13  The desktop app')
 P('<b>ObliqSound.app</b> and <b>ObliqSonic.app</b> (in /Applications) are the instruments on their own, with no DAW.')
 CTRL([['Options (top left)', '', 'Audio output, sample rate, buffer size and MIDI inputs. Every MIDI input is turned on at start, and new devices are picked up when plugged in.'],
       ['Computer keyboard', '', 'Plays notes (below). Click the panel first so it has the keyboard.'],
+      ['Help', 'F1', 'The same help window as in the plug-ins (chapter 12).'],
       ['ObliqSonic: output', 'size list', 'The size list at the top right also chooses the output: <b>stereo</b> (a decode to two virtual cardioids, the default in the app) '
        'or <b>16-channel Ambisonics</b> for an interface or virtual device with 16 outputs.']])
 TABLE([['Keys', 'Notes'],
@@ -485,9 +502,10 @@ TABLE([['Keys', 'Notes'],
 P('The keys are ignored while Command is held.')
 
 # ============================================================== 13 tech
-H1('13  Technical reference')
+H1('14  Technical reference')
 TABLE([['', ''],
-       ['Engine', 'scsynth, the SuperCollider synthesis server (3.13), embedded in the plug-in and run in the host\'s audio callback'],
+       ['Version', '2.1'],
+       ['Engine', 'scsynth, the SuperCollider synthesis server (3.13), embedded in the plug-in and run in the host\'s audio callback. Both ObliqSound and ObliqSonic use it for all synthesis and sample playback; there is no other sound engine'],
        ['Custom UGens', 'Morphing zero-delay state-variable filter with drive and comb; 2x oversampled polygon oscillator; 128-partial additive bank; third-order Ambisonics encoder with distance'],
        ['Modulation', 'Computed in C++ once per 64 samples (envelopes, LFOs, pin matrix, swarm, motion) and written straight to the server\'s control buses; filter cutoff is smoothed per sample'],
        ['Polyphony', '16 voices with oldest-note stealing; a held VCA INIT chord keeps at most 8 notes'],
@@ -500,7 +518,7 @@ TABLE([['', ''],
        ['ObliqSonic output', '16 channels, 3rd-order Ambisonics, ACN / SN3D; 22 moving point sources'],
        ['Formats', 'VST3, Audio Unit, desktop app; Apple silicon and Intel']], [40, 130], head=False)
 
-H1('14  Troubleshooting')
+H1('15  Troubleshooting')
 TABLE([['Problem', 'What to do'],
        ['ObliqSonic sounds only in stereo or from one side', 'The track has fewer than 16 channels, or the decoder is missing. Set Track channels: 16 and insert a decoder at order 3, SN3D.'],
        ['ObliqSonic image is blurred or too bright', 'Check the decoder\'s order (3) and normalisation (SN3D).'],

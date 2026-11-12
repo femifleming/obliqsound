@@ -45,7 +45,8 @@ Download the zips from the [Releases page](../../releases/latest):
 | ObliqSound-VST3-macOS.zip / ObliqSonic-VST3-macOS.zip | VST3 plug-ins |
 | ObliqSound-AU-macOS.zip / ObliqSonic-AU-macOS.zip | Audio Units (Logic, GarageBand, MainStage, Ableton Live) |
 | ObliqSound-App-macOS.zip / ObliqSonic-App-macOS.zip | Desktop apps |
-| ObliqSound_ObliqSonic_Manual.pdf | The manual |
+| ObliqSound_ObliqSonic_Manual.pdf | The manual (also inside each plug-in: Help > Manual) |
+| ObliqSound_Request_Log.pdf | A log of everything the author asked for, and what came of it |
 
 1. Unzip. Copy `.vst3` to `~/Library/Audio/Plug-Ins/VST3`, `.component` to `~/Library/Audio/Plug-Ins/Components` and the apps to `/Applications`.
 2. The builds are signed ad hoc, not notarised, so macOS will refuse them the first time. Clear the quarantine flag:
@@ -55,6 +56,10 @@ Download the zips from the [Releases page](../../releases/latest):
 3. Rescan plug-ins in your DAW. Both are listed under the manufacturer **ObliqSound**.
 
 The plug-ins run on Apple silicon and Intel (macOS 11 or later). Each one is about 100 MB, mostly the rendered landscape frames and the recordings. There is no VST2 version (the VST2 SDK is no longer available).
+
+### Help
+
+Press **Help** beside the preset list, or **F1**, in either plug-in or app. A help window opens over the panel with topics for playing, the controls, the voice, the sampler, each page, the matrix, the swarm, ObliqSonic's space, presets and troubleshooting. Its **Manual (PDF)** button opens the full manual. Esc closes it.
 
 ### The desktop apps
 
@@ -87,7 +92,8 @@ How it fits together:
 - **`plugin/Source/Engine.cpp`** manages the 16 voices and computes every modulator in C++ (envelopes, LFOs, the pin matrix, the swarm, ObliqSonic's motion), writing straight into the server's control buses once per 64-sample block.
 - **`plugin/Source/PluginEditor.cpp`** draws the whole panel as one component from `layout.json`.
 - **`gen.py`** designs the panel: it places every control in mirror symmetry, renders the art and the topographic frames, and writes the presets. `export_layout.py` turns its output into `layout.json`.
-- `host/` is a headless test host, and `manual/mkmanual.py` builds the PDF.
+- **`plugin/Source/Help.h`** holds the text of the built-in help window.
+- `host/` is a headless test host, `manual/mkmanual.py` builds the manual and `manual/mklog.py` the [request log](manual/ObliqSound_Request_Log.pdf).
 
 ## Human contributions
 
@@ -119,6 +125,8 @@ ObliqSound and ObliqSonic were written with Claude Code (Anthropic), working und
 - **ObliqSonic's concept.** A multichannel IEM / SPARTA encoder of this instrument, moved by flocking, boids, deviated Lorenz attractors and gravity. Each field recording is copied and flies around with its own modulators for its start and end points.
 - **The formats and the release.** Plug-ins and desktop apps for both, a full PDF manual, and publishing it here with no Kia logos and a link to the original.
 - **The engine change.** The author tested the first (Csound) version hard with dense MIDI, reported the distortion, lag and missing voices, and asked for a higher-quality engine built on SuperCollider with a 16-bit output stage.
+
+The full list of requests, in order, is in the [request log](manual/ObliqSound_Request_Log.pdf).
 
 ## Credits
 

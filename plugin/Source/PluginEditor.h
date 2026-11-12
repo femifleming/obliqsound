@@ -24,7 +24,7 @@ public:
     float scale = 1.0f;
 
 private:
-    enum Type { Image, Knob, VSlider, NSlider, Check, Combo, Button, Label, Scope, PresetBox, PresetSave, PresetRemove, SizeBox };
+    enum Type { Image, Knob, VSlider, NSlider, Check, Combo, Button, Label, Scope, PresetBox, PresetSave, PresetRemove, SizeBox, Help };
     struct Item
     {
         Type type = Image; juce::Rectangle<int> r; int page = -1; int param = -1;
@@ -43,6 +43,10 @@ private:
     void setParam (int item, float norm);
     void showMenu (int item);
     void changePage (int to);
+    void drawHelp (juce::Graphics&);
+    bool helpClick (juce::Point<float>);
+    std::vector<int> helpTopics() const;
+    juce::Rectangle<float> helpWindow() const { return { (float) baseW * 0.5f - 370.0f, 52.0f, 740.0f, 540.0f }; }
     juce::String bgName (int page, int morph, int idle) const;
     juce::Point<float> toPanel (juce::Point<float> p) const { return p / scale; }
 
@@ -68,6 +72,7 @@ private:
     std::array<float, 24> lzx {}, lzy {};
     std::vector<float> lfoH[2];
     int lastPresetVersion = -1;
+    bool helpOpen = false; int helpTopic = 0;
     std::map<int, int> heldKeys; int kbOctave = 0, kbVelocity = 100;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ObliqPanel)
 };
