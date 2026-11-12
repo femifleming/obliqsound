@@ -76,6 +76,8 @@ jobs:
       - name: Engine test (16 voices through the packaged server plug-ins and SynthDefs)
         run: |
           R="$(find plugin/build/ObliqSound_artefacts -type d -name Resources | head -1)"
+          R="$(cd "$R" && (pwd -W 2>/dev/null || pwd))"          # an absolute path in the system's own form
+          ls "$R/defs" | head -3; ls "$R/plugins"
           "$(find plugin/build -maxdepth 1 -name 'obliq_smoke*' -type f | head -1)" "$R/plugins" "$R/defs" 16 x
 
       - name: pluginval
