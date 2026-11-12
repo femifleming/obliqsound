@@ -14,7 +14,7 @@ for N in ObliqSound ObliqSonic; do
   SRC=ci/tmp/$N.vst3/Contents/Resources
   rm -rf "$SRC/plugins" && mkdir -p "$SRC/plugins"
   for p in BinaryOpUGens UnaryOpUGens MulAddUGens IOUGens OscUGens LFUGens NoiseUGens DynNoiseUGens FilterUGens DelayUGens PanUGens TriggerUGens ReverbUGens GrainUGens ChaosUGens DemandUGens PhysicalModelingUGens; do
-    cp "$(find $SCP -name "$p.$EXT" | head -1)" "$SRC/plugins/"
+    cp "$(find $SCP $B/scplugins -name "$p.$EXT" 2>/dev/null | head -1)" "$SRC/plugins/"
   done
   cp "$(find $B -maxdepth 2 -name "OblqUGens.$EXT" | head -1)" "$SRC/plugins/"
   # VST3

@@ -72,6 +72,20 @@ target_compile_definitions(OblqUGens PRIVATE ${SC_DEFS})
 target_compile_options(OblqUGens PRIVATE $<IF:$<CXX_COMPILER_ID:MSVC>,/w,-w>)
 target_include_directories(OblqUGens PRIVATE ${SC_INCLUDES})
 
+# On Windows SuperCollider's own UGen targets drag in its language interpreter, so the stock UGens we use
+# are built here from its sources instead (one file each).
+if(WIN32)
+  foreach(p BinaryOpUGens UnaryOpUGens MulAddUGens IOUGens OscUGens LFUGens NoiseUGens DynNoiseUGens FilterUGens DelayUGens
+            PanUGens TriggerUGens ReverbUGens GrainUGens ChaosUGens DemandUGens PhysicalModelingUGens)
+    add_library(${p} MODULE ${SC}/server/plugins/${p}.cpp)
+    set_target_properties(${p} PROPERTIES CXX_STANDARD 17 PREFIX "" SUFFIX ".scx" LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/scplugins)
+    target_compile_definitions(${p} PRIVATE ${SC_DEFS})
+    target_compile_options(${p} PRIVATE /w /Zc:__cplusplus)
+    target_include_directories(${p} PRIVATE ${SC_INCLUDES})
+    target_link_libraries(${p} PRIVATE wsock32 ws2_32)
+  endforeach()
+endif()
+
 # ---- engine smoke test: starts the server, loads the SynthDefs, plays 16 voices, checks the output
 add_executable(obliq_smoke ../sc/voicetest.cpp)
 set_target_properties(obliq_smoke PROPERTIES CXX_STANDARD 17)

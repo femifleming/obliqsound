@@ -16,4 +16,5 @@ cmake -G Ninja ../supercollider -DCMAKE_BUILD_TYPE=Release "${EXTRA[@]}" \
   -DSC_QT=OFF -DSC_IDE=OFF -DSUPERNOVA=OFF -DENABLE_TESTSUITE=OFF -DSC_ABLETON_LINK=OFF -DSC_HIDAPI=OFF -DNO_LIBSNDFILE=ON \
   -DSC_EL=OFF -DSC_ED=OFF -DSC_VIM=OFF -DINSTALL_HELP=OFF -DNATIVE=OFF -DNO_X11=ON
 ninja libscsynth
+[ "$(uname -s)" = Darwin ] || [ "$(uname -s)" = Linux ] || exit 0     # Windows: the UGens are built by plugin/CMakeLists.txt
 ninja BinaryOpUGens UnaryOpUGens MulAddUGens IOUGens OscUGens LFUGens NoiseUGens DynNoiseUGens FilterUGens DelayUGens PanUGens TriggerUGens ReverbUGens GrainUGens ChaosUGens DemandUGens PhysicalModelingUGens
