@@ -8,7 +8,7 @@ on:
       tag:
         description: Release to take the resources from and upload to
         required: true
-        default: v2.2.0
+        default: v2.2.1
       only:
         description: Build only this system (Windows or Linux); empty = both
         required: false
