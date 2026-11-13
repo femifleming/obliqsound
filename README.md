@@ -157,3 +157,7 @@ The full list of requests, in order, is in the [request log](manual/ObliqSound_R
 ## License
 
 GNU General Public License v3 (see [LICENSE](LICENSE)), as SuperCollider's licence requires. The field recordings and the artwork belong to the author.
+
+## Request log
+
+Everything that was asked for while this was designed and built is in [REQUESTS.md](REQUESTS.md).
