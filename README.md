@@ -1,6 +1,6 @@
 <p align="center"><img src="app/icon.png" width="128" alt="ObliqSound icon">&nbsp;&nbsp;&nbsp;<img src="app/icon_sonic.png" width="128" alt="ObliqSonic icon"></p>
 
-<h1 align="center">ObliqSound &nbsp;/&nbsp; ObliqSonic</h1>
+<h1 align="center">obliqsound &nbsp;/&nbsp; obliqsonic</h1>
 
 <p align="center">
 A polyphonic synthesizer and field-recording instrument with a living topographic panel, and its spatial twin:<br>
@@ -84,7 +84,7 @@ Press **Help** beside the preset list, or **F1**, in either plug-in or app. A he
 - **Memory:** each app remembers its sound and devices.
 - **ObliqSonic output:** the size list at the top right also chooses the output: **stereo**, a decode to a virtual cardioid pair (the default in the app), or **16-channel Ambisonics** for an interface or virtual device with 16 outputs.
 
-### ObliqSonic with IEM / SPARTA (REAPER)
+### obliqsonic with IEM / SPARTA (REAPER)
 
 1. Insert ObliqSonic on a track and set the track to **16 channels** (Route > Track channels: 16).
 2. After it, add a decoder at **order 3, SN3D**: IEM **BinauralDecoder** for headphones, or IEM **AllRADecoder** / SPARTA **AmbiDEC** for speakers.
